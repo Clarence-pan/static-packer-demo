@@ -7,12 +7,18 @@ var del = require('del');
 var named = require('vinyl-named');
 var _ = require('underscore');
 
-gulp.task('build', function(){
+gulp.task('build-src-webpack', function(){
     var config = require('./webpack.config.js');
-    return gulp.src('src/app.js')
-        .pipe(webpack(config))
-        .pipe(gulp.dest('public/dist/'));
+    return gulp.src('.')
+        .pipe(webpack(config, null, afterPacked))
+        .pipe(gulp.dest('public/dist2/'));
+
+    function afterPacked(err, stats){
+        console.log("After packed: ", err, stats);
+    }
 });
+
+gulp.task('build', ['build-src-webpack']);
 
 gulp.task('watch', function(){
     var config = require('./webpack.config.js');
@@ -27,9 +33,7 @@ gulp.task('clean', function(){
     ]);
 });
 
-gulp.task('default', function(done){
-    return runSequence('build', done);
-});
+gulp.task('default', ['build']);
 
 gulp.task('rebuild', function(done){
     return runSequence('clean', 'default', done);
@@ -37,7 +41,7 @@ gulp.task('rebuild', function(done){
 
 gulp.task('build-lib', function(){
     var config = require('./lib/webpack.config.js');
-    return gulp.src('')
+    return gulp.src('.')
         .pipe(webpack(config))
         .pipe(gulp.dest('public/lib/'));
 });
