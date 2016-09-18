@@ -1,3 +1,6 @@
+// 加载process.env
+require('dotenv').load();
+
 var gulp = require('gulp');
 var runSequence = require('run-sequence');
 var minify = require('gulp-minify');
@@ -9,84 +12,141 @@ var gutil = require('gulp-util');
 var path = require('path');
 var rename = require('gulp-rename');
 var md5 = require('gulp-md5');
+var glob = require('glob');
+var unique = require('array-unique');
 
 var webpackIndividuals = require('./plugins/webpack-individuals');
 var staticsHashes = require('./plugins/statics-hashes');
+var optimize = require('./plugins/dependency-optimize');
+var SimpleFileCache = require('./plugins/simple-file-cache.js');
 
-// 加载process.env
-require('dotenv').load();
 
 // 静态资源的hash表
 var hashMap = {};
 
+// 文件缓存
+var cache = new SimpleFileCache();
+
+// 主要内容的目录
+var SRC_DIR = './src';
+
+// 构建完成的目录
+var DIST_DIR = './public/dist';
+
+var sourceScripts = [
+    './src/**/index.js',
+    './src/**/index.jsx',
+    './src/**/index.ts',
+    './src/**/index.tsx',
+];
+
+var sourceCssFiles = [
+    './src/**/index.css'
+];
+
+var watchFiles = ['./src/**/*'];
+
 // 通过webpack构建src目录下东东
 gulp.task('build-src-webpack', function () {
     var config = require('./webpack.config.js');
-    var entries = [
-        './src/**/index.js',
-        './src/**/index.jsx',
-        './src/**/index.ts',
-        './src/**/index.tsx',
-    ];
-
-    return gulp.src(entries, {base: './src'})
+    return gulp.src(sourceScripts, {base: SRC_DIR})
         .pipe(named(function (file) {
             file.baseDir = path.resolve(file.base);
             file.destPath = path.resolve(path.dirname(file.path) + path.extname(file.path));
-            file.destName = file.destPath.substring(file.baseDir.length).replace(/[\\\/]+/, '').replace(/\.\w+$/, '');
+            file.destName = path.relative(file.baseDir, file.destPath).replace(/\.\w+$/, '');
             return file.destName;
         }))
-        .pipe(webpackIndividuals(config, null, afterPacked))
-        .pipe(gulp.dest('public/dist'))
+        .pipe(optimize({
+            dest: function(file){
+                return glob(path.join(file.cwd, DIST_DIR, path.dirname(file.relativePath) + '*.js'), {sync: true});
+            },
+            depends: function(file){
+                var depends = cache.get("webpack_depends_of_" + file.path);
+                return depends ? depends : [];
+            }
+        }))
+        .pipe(webpackIndividuals(config, null, function(err, stats, file){
+            if (err || !stats || !file){
+                return;
+            }
+
+            cache.set("webpack_depends_of_" + file.path, unique([file.path].concat(stats.compilation.fileDependencies)));
+        }))
+        .pipe(gulp.dest(DIST_DIR))
         .pipe(staticsHashes.gather({to: hashMap}));
-
-    function afterPacked(err, stats) {
-        gutil.log("[afterPacked]: After packed!");
-        if (err) {
-            gutil.log("[afterPacked]: Ignore due to errors.");
-            return;
-        }
-
-        gutil.log("[afterPacked]: File dependencies: ", stats.compilation.fileDependencies);
-    }
 });
 
 // css单独构建
 gulp.task('build-css-files', function () {
     return gulp
-        .src('./src/**/index.css', {base: './src'})
+        .src(sourceCssFiles, {base: SRC_DIR})
+        .pipe(optimize({
+            dest: function(file){
+                return glob(path.join(file.cwd, DIST_DIR, path.dirname(file.relativePath) + '*.css'), {sync: true});
+            },
+            depends: function(file){
+                return [file.path];
+            }
+        }))
         .pipe(cleanCss({compatibility: 'ie8'}))
         .pipe(rename(function (file) {
             // remove duplicated "/index"
             // rename "product/detail/index.css" to "product/detail.css"
-            file.dirname = path.dirname(file.dirname);
-            file.basename = path.basename(file.dirname);
+            var fileDirName = file.dirname;
+            file.dirname = path.dirname(fileDirName);
+            file.basename = path.basename(fileDirName);
         }))
         .pipe(md5(20))
-        .pipe(gulp.dest('./public/dist'))
+        .pipe(gulp.dest(DIST_DIR))
         .pipe(staticsHashes.gather({to: hashMap}));
 });
 
 // 构建完成后更新hash
-gulp.task('update-hashes', function () {
-    staticsHashes.update(hashMap);
+gulp.task('update-hashes', function (done) {
+    staticsHashes.update(hashMap, null, function(error){
+        done(error);
+    });
+});
+
+// 保存缓存的内容
+gulp.task('save-caches', function(done){
+    cache.save(function(error){
+        done(error);
+    });
 });
 
 // 构建任务
 gulp.task('build', function (done) {
-    return runSequence(['build-src-webpack', 'build-css-files'], 'update-hashes', done);
+    return runSequence(
+        ['build-src-webpack', 'build-css-files'],
+        ['update-hashes', 'save-caches'],
+        done);
 });
 
 // 监听文件改动的处理
 gulp.task('watch', function () {
-    // todo: ...
-    console.log("Error: watch is not implemented yet.");
-    process.exit(1);
+    var buildTimer = null;
 
-    //var config = require('./webpack.config.js');
-    //return gulp.src('./src')
-    //    .pipe(webpack(_.extend(config, {watch: true})))
-    //    .pipe(gulp.dest('public/dist/'));
+    runSequence('build', function(){
+        gutil.log('-----------------------------------------------');
+        gutil.log('begin watching...');
+        gulp.watch(watchFiles, function(event){
+            console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+            optimize.cleanCache({file: event.path});
+
+            if (!buildTimer) {
+                buildTimer = setTimeout(function(){
+                    runSequence('build', function(){
+                        buildTimer = null;
+                        gutil.log('-----------------------------------------------');
+                        gutil.log('still watching...');
+                    });
+                }, 200);
+            }
+        });
+    });
+
+    return new Promise(function(){});
 });
 
 // 清理构建后的文件
@@ -97,7 +157,9 @@ gulp.task('clean', function () {
 });
 
 // 默认启动的任务
-gulp.task('default', ['build']);
+gulp.task('default', function(done){
+    return runSequence('build', done);
+});
 
 // 重新构建
 gulp.task('rebuild', function (done) {

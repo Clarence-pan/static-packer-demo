@@ -15,7 +15,9 @@ function webpackIndividuals(config, specialWebpack, doneCallback) {
             return callback(null, file);
         }
 
-        gutil.log("webpackIndividuals: called!  File.path=" + file.path + " named=" + file.named + " file-type=" + getFileType(file));
+        if (process.env.DEBUG){
+            gutil.log("webpackIndividuals: called!  File.path=" + file.path + " named=" + file.named + " file-type=" + getFileType(file));
+        }
 
         cfg.entry = {};
         cfg.entry[file.named] = file.path;
@@ -55,15 +57,16 @@ function webpackIndividuals(config, specialWebpack, doneCallback) {
                     path: path.join(file.base, file.named + '_' + stats.hash + path.extname(val.existsAt)),
                     contents: new Buffer(val.source()),
                     hash: stats.hash,
+                    depends: stats.compilation.fileDependencies,
                 }));
             });
 
-            doneCallback(err, stats);
+            if (doneCallback && typeof doneCallback === 'function'){
+                doneCallback(err, stats, file);
+            }
 
             callback();
         });
-    }, function (cb) {
-        cb();
     });
 }
 

@@ -5,5 +5,6 @@ import prompt from './prompt';
 
 $("<div class='message'>Hello from js: this is home page!</div>").appendTo('body');
 
-prompt.show();
+console.log('prompt: ', prompt);
+console.log("This message is 66666666666!");
 

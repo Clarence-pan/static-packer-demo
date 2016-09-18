@@ -57,12 +57,14 @@
     "yaml-loader": "^0.4.0"
   },
   "dependencies": {
+    "array-unique": "^0.3.2",
     "babel-polyfill": "^6.13.0",
     "dotenv": "^2.0.0",
     "jquery": "^3.1.0",
     "lodash": "^4.15.0",
     "react": "^15.3.1",
     "react-dom": "^15.3.1",
+    "request": "^2.75.0",
     "underscore": "^1.8.3"
   }
 }

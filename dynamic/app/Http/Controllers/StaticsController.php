@@ -16,13 +16,21 @@ class StaticsController extends Controller
 
     public function doPostUpdate(Request $request)
     {
+        $apiKey = env('UPDATE_STATICS_MAP_API_KEY');
+        if ($apiKey !== $request->header('x-api-key')){
+            abort(404);
+        }
+
         try {
-            $data = json_decode($request->getContent());
+            $data = json_decode($request->getContent(), true);
             if (empty($data)) {
-                throw new \InvalidArgumentException("Invalid request data!");
+                return response()->json([
+                    'success' => true,
+                    'message' => 'success with nothing updated.'
+                ]);
             }
 
-            if (!is_array($data) || empty($data['css']) || empty($data['js'])) {
+            if (!is_array($data)) {
                 throw new \InvalidArgumentException("Invalid format of request data!");
             }
 
@@ -30,7 +38,7 @@ class StaticsController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'success'
+                'message' => 'success, ' . array_sum(array_map('count', $data)) . ' files updated.',
             ]);
         } catch (\Exception $e) {
             return response()->json([

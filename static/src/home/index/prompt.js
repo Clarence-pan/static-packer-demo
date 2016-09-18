@@ -1,5 +1,7 @@
 export default class Prompt {
-    show() {
+    static show() {
         alert("Hello! This is a prompt.");
     }
 }
+
+
