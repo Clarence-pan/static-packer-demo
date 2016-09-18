@@ -55,11 +55,6 @@ module.exports = {
         // 从window变量中导入的外部变量:
         //'jquery': 'window.jQuery',
         //'underscore': 'window._',
-        //'common': 'window.Common',
-        //'amd-require': 'window.require',
-        //'amd-define': 'window.define',
-        //'React': 'window.React',
-        //'ReactDOM': 'window.ReactDOM',
     },
     output: {
         path: dist_dir,

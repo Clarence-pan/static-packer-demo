@@ -11,7 +11,7 @@ gulp.task('build-src-webpack', function(){
     var config = require('./webpack.config.js');
     return gulp.src('.')
         .pipe(webpack(config, null, afterPacked))
-        .pipe(gulp.dest('public/dist2/'));
+        .pipe(gulp.dest('public/dist'));
 
     function afterPacked(err, stats){
         console.log("After packed: ", err, stats);

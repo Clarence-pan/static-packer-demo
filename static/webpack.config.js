@@ -58,8 +58,8 @@ module.exports = {
         'common': 'window.Common',
         'amd-require': 'window.require',
         'amd-define': 'window.define',
-        'React': 'window.React',
-        'ReactDOM': 'window.ReactDOM',
+        'react': 'window.React',
+        'react-dom': 'window.ReactDOM',
     },
     output: {
         path: dist_dir,
