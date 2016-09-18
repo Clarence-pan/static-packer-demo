@@ -5,7 +5,7 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 
 
-$("<div class='message'>Hello from ts: this is book/detail page!</div>").appendTo('body');
+$("<div class='message'>Hello from ts: this is book/index page!</div>").appendTo('body');
 
 common.log("Hello via common.log!");
 

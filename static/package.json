@@ -29,6 +29,7 @@
     "gulp-if": "^2.0.1",
     "gulp-jshint": "^2.0.1",
     "gulp-less": "^3.1.0",
+    "gulp-md5": "^0.1.2",
     "gulp-md5-plus": "^0.2.5",
     "gulp-minify": "0.0.14",
     "gulp-open": "^2.0.0",
@@ -52,10 +53,12 @@
     "vinyl-named": "^1.1.0",
     "webpack": "^1.13.2",
     "webpack-dev-server": "^1.15.2",
+    "webpack-stream": "^3.2.0",
     "yaml-loader": "^0.4.0"
   },
   "dependencies": {
     "babel-polyfill": "^6.13.0",
+    "dotenv": "^2.0.0",
     "jquery": "^3.1.0",
     "lodash": "^4.15.0",
     "react": "^15.3.1",

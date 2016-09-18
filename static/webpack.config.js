@@ -33,12 +33,7 @@ var individualEntries = (function () {
 // 生成webpack的配置
 module.exports = {
     devtool: "source-map",
-    entry: _.extend(
-        {
-            //'webpack-dev-server/client': 'webpack-dev-server/client',
-            //'webpack/hot/only-dev-server': 'webpack/hot/only-dev-server',
-        },
-        individualEntries),
+    entry: individualEntries,
 
     // 有两种方式很方便地导入外部库：
     // 1. 使用alias映射到本地文件 -- 最终可以通过CommonsChunkPlugin合并到vendors.js中

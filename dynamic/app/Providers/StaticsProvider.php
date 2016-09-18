@@ -130,8 +130,13 @@ class StaticsProvider extends ServiceProvider
      */
     public function updateStaticsMap(array $maps)
     {
-        $mapData = array_merge_recursive($this->staticsMap, $maps);
-        return self::safelyPutPhpFileContents($this->staticsMapFile, "<?php\nreturn " . var_export($mapData) . ";\n");
+        $mapData = $this->staticsMap;
+
+        foreach ($maps as $type => $data) {
+            $mapData[$type] = array_merge((array)@$mapData[$type], (array)$data);
+        }
+
+        return self::safelyPutPhpFileContents($this->staticsMapFile, "<?php\nreturn " . var_export($mapData, true) . ";\n");
     }
 
     /**

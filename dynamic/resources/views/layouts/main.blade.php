@@ -1,8 +1,8 @@
 @extends('layouts.basic')
 
 @registerStatics([
-    'css' => ['common.css'],
-    'js' =>  ['lib/jquery.js', 'common.js'],
+    'css' => ['lib/common.css'],
+    'js' =>  ['lib/jquery.js', 'lib/underscore.js', 'lib/common.js'],
 ])
 
 @if (empty($dontRegisterDefaultStatics))
