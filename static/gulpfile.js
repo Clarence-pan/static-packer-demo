@@ -1,47 +1,62 @@
 var gulp = require('gulp');
-var webpack = require('webpack-stream');
 var runSequence = require('run-sequence');
 var minify = require('gulp-minify');
 var cleanCss = require('gulp-clean-css');
 var del = require('del');
 var named = require('vinyl-named');
-var _ = require('underscore');
+var _ = require('lodash');
 var gutil = require('gulp-util');
-var through = require('through2');
 var path = require('path');
-var child_process = require('child_process');
 var rename = require('gulp-rename');
 var md5 = require('gulp-md5');
 
-// load the process.env
+var webpackIndividuals = require('./plugins/webpack-individuals');
+var staticsHashes = require('./plugins/statics-hashes');
+
+// 加载process.env
 require('dotenv').load();
 
 // 静态资源的hash表
 var hashMap = {};
 
-// build src via webpack
+// 通过webpack构建src目录下东东
 gulp.task('build-src-webpack', function () {
     var config = require('./webpack.config.js');
-    //var entries = [
-    //    './src/**/index.js',
-    //    './src/**/index.jsx',
-    //    './src/**/index.ts',
-    //    './src/**/index.tsx',
-    //];
-    //
-    //delete config.entry;
-    return gulp.src('', {base: './src'})
-        //.pipe(named())
-        .pipe(webpack(config))
+    var entries = [
+        './src/**/index.js',
+        './src/**/index.jsx',
+        './src/**/index.ts',
+        './src/**/index.tsx',
+    ];
+
+    return gulp.src(entries, {base: './src'})
+        .pipe(named(function (file) {
+            file.baseDir = path.resolve(file.base);
+            file.destPath = path.resolve(path.dirname(file.path) + path.extname(file.path));
+            file.destName = file.destPath.substring(file.baseDir.length).replace(/[\\\/]+/, '').replace(/\.\w+$/, '');
+            return file.destName;
+        }))
+        .pipe(webpackIndividuals(config, null, afterPacked))
         .pipe(gulp.dest('public/dist'))
-        .pipe(gatherStaticsHashes(hashMap));
+        .pipe(staticsHashes.gather({to: hashMap}));
+
+    function afterPacked(err, stats) {
+        gutil.log("[afterPacked]: After packed!");
+        if (err) {
+            gutil.log("[afterPacked]: Ignore due to errors.");
+            return;
+        }
+
+        gutil.log("[afterPacked]: File dependencies: ", stats.compilation.fileDependencies);
+    }
 });
 
-gulp.task('build-css-files', function(){
+// css单独构建
+gulp.task('build-css-files', function () {
     return gulp
         .src('./src/**/index.css', {base: './src'})
         .pipe(cleanCss({compatibility: 'ie8'}))
-        .pipe(rename(function(file){
+        .pipe(rename(function (file) {
             // remove duplicated "/index"
             // rename "product/detail/index.css" to "product/detail.css"
             file.dirname = path.dirname(file.dirname);
@@ -49,36 +64,47 @@ gulp.task('build-css-files', function(){
         }))
         .pipe(md5(20))
         .pipe(gulp.dest('./public/dist'))
-        .pipe(gatherStaticsHashes(hashMap));
+        .pipe(staticsHashes.gather({to: hashMap}));
 });
 
-gulp.task('update-hashes', function(){
-    updateStaticsHashes(hashMap);
+// 构建完成后更新hash
+gulp.task('update-hashes', function () {
+    staticsHashes.update(hashMap);
 });
 
-gulp.task('build', function(done){
+// 构建任务
+gulp.task('build', function (done) {
     return runSequence(['build-src-webpack', 'build-css-files'], 'update-hashes', done);
 });
 
+// 监听文件改动的处理
 gulp.task('watch', function () {
-    var config = require('./webpack.config.js');
-    return gulp.src('./src')
-        .pipe(webpack(_.extend(config, {watch: true})))
-        .pipe(gulp.dest('public/dist/'));
+    // todo: ...
+    console.log("Error: watch is not implemented yet.");
+    process.exit(1);
+
+    //var config = require('./webpack.config.js');
+    //return gulp.src('./src')
+    //    .pipe(webpack(_.extend(config, {watch: true})))
+    //    .pipe(gulp.dest('public/dist/'));
 });
 
+// 清理构建后的文件
 gulp.task('clean', function () {
     return del([
         'public/dist/**/*'
     ]);
 });
 
+// 默认启动的任务
 gulp.task('default', ['build']);
 
+// 重新构建
 gulp.task('rebuild', function (done) {
     return runSequence('clean', 'default', done);
 });
 
+// lib目录下的构建
 gulp.task('build-lib', function () {
     var config = require('./lib/webpack.config.js');
     return gulp.src('.')
@@ -86,66 +112,6 @@ gulp.task('build-lib', function () {
         .pipe(gulp.dest('public/lib/'));
 });
 
-
-function updateStaticsHashes(hashes) {
-    console.log("Update hashes: ", hashes);
-    var cmd = [process.env.PHP_PATH, 'artisan', 'update-statics-map', '-v'].join(' ');
-    console.log('> ' + cmd);
-    var output = child_process.execSync(cmd, {
-        cwd: process.env.DYNAMIC_PATH,
-        input: JSON.stringify(hashes),
-        timeout: 30 * 1000, // ms
-    });
-
-    console.log("OUTPUT: " + output);
-}
-
-function gatherStaticsHashes(hashes) {
-    if (!hashes) {
-        console.error("Invalid parameter <hashes>! It must be a valid object");
-    }
-
-    return through.obj(function (file, encoding, callback) {
-        if (file.isNull()) {
-            // nothing to do
-            return callback(null, file);
-        }
-
-        //console.log("updateHashesJob: called! File.path=", file.path);
-        var relativePath = file.path.substring(file.base.length).replace(/^[\/|\\]+/, '');
-        var m = relativePath.match(/_([a-zA-Z0-9]+)\./);
-        if (!m){
-            this.emit('error', new gutil.PluginError("gatherStaticsHashes: cannot resolve the hash from " + file.path));
-            return callback(null, file);
-        }
-
-        var hash = m[1];
-        var urlPath = relativePath.replace(m[0].substring(0, m[0].length - 1), '').replace(/\\/g, '/');
-
-        switch (path.extname(file.path).toLowerCase()) {
-            case '.js':
-                hashes['js'] = addKeyValueToMap(hashes['js'], urlPath, hash);
-                break;
-            case '.css':
-                hashes['css'] = addKeyValueToMap(hashes['css'], urlPath, hash);
-                break;
-            default:
-                break;
-        }
-
-        return callback(null, file);
-    });
-}
-
-function addKeyValueToMap(map, key, value) {
-    if (!map) {
-        map = {};
-    }
-
-    map[key] = value;
-
-    return map;
-}
 
 function dd() {
     console.log.apply(console, arguments);

@@ -10,30 +10,35 @@ var dist_dir = path.resolve(__dirname, 'public/dist');
 var public_dir = path.resolve(__dirname, 'public');
 var node_modules_dir = path.resolve(__dirname, 'node_modules');
 
-// 单独的每个页面的入口文件
-var individualEntries = (function () {
-    var entries = {};
+//// 单独的每个页面的入口文件
+//var individualEntries = (function () {
+//    var entries = {};
+//
+//    resolveEntries('index.js');
+//    resolveEntries('index.jsx');
+//    resolveEntries('index.ts');
+//    resolveEntries('index.tsx');
+//
+//    return entries;
+//
+//    function resolveEntries(entryName) {
+//        var entriesFiles = glob(path.join(src_dir, '**/' + entryName), {sync: true});
+//        entriesFiles.forEach(function (entry) {
+//            var targetFile = path.dirname(entry.substring(src_dir.length + 1));
+//            entries[targetFile] = entry;
+//        });
+//    }
+//})();
 
-    resolveEntries('index.js');
-    resolveEntries('index.jsx');
-    resolveEntries('index.ts');
-    resolveEntries('index.tsx');
-
-    return entries;
-
-    function resolveEntries(entryName) {
-        var entriesFiles = glob(path.join(src_dir, '**/' + entryName), {sync: true});
-        entriesFiles.forEach(function (entry) {
-            var targetFile = path.dirname(entry.substring(src_dir.length + 1));
-            entries[targetFile] = entry;
-        });
-    }
-})();
+if (!/gulp/.test(process.argv.join(' '))){
+    console.log("Error: this webpack should be run via gulp!");
+    process.exit(1);
+}
 
 // 生成webpack的配置
 module.exports = {
     devtool: "source-map",
-    entry: individualEntries,
+    //entry: individualEntries,
 
     // 有两种方式很方便地导入外部库：
     // 1. 使用alias映射到本地文件 -- 最终可以通过CommonsChunkPlugin合并到vendors.js中
