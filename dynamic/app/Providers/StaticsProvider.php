@@ -24,23 +24,33 @@ class StaticsProvider extends ServiceProvider
         $blade = $this->app['view']->getEngineResolver()->resolve('blade')->getCompiler();
 
         // @registerStatics(['css'=>'xxx.css', 'js' =>'xxx.js'])
-        $blade->directive('registerStatics', function($expression){
+        $blade->directive('registerStatics', function ($expression) {
             return "<?php echo app()->statics->registerStatics$expression; ?>";
         });
 
         // @registerDefaultStatics()
-        $blade->directive('registerDefaultStatics', function($expression){
+        $blade->directive('registerDefaultStatics', function ($expression) {
             return "<?php echo app()->statics->registerDefaultStatics(\$__view__); ?>";
         });
 
-        // @loadStatics('css')
-        $blade->directive('loadStatics', function($expression){
-            return "<?php echo app()->statics->loadStatics$expression; ?>";
+        // @loadRegisteredStatics('css')
+        $blade->directive('loadRegisteredStatics', function ($expression) {
+            return "<?php echo app()->statics->loadRegisteredStatics$expression; ?>";
         });
 
         // @staticUrlOfFile($type, $file)
-        $blade->directive('staticUrlOfFile', function($expression){
+        $blade->directive('staticUrlOfFile', function ($expression) {
             return "<?php echo app()->statics->urlOfFile$expression; ?>";
+        });
+
+        // @importScripts($scripts)
+        $blade->directive('importScripts', function ($expression) {
+            return "<?php echo app()->statics->importScripts$expression; ?>";
+        });
+        
+        // @importStyles($styles)
+        $blade->directive('importStyles', function ($expression) {
+            return "<?php echo app()->statics->importStyles$expression; ?>";
         });
     }
 
@@ -62,6 +72,7 @@ class StaticsProvider extends ServiceProvider
     }
 
     /**
+     * 注册资源
      * @param array $resources
      */
     public function registerStatics(array $resources)
@@ -75,6 +86,10 @@ class StaticsProvider extends ServiceProvider
         }
     }
 
+    /**
+     * 根据视图名称注册默认的资源
+     * @param $viewName
+     */
     public function registerDefaultStatics($viewName)
     {
         $viewNameAsFileName = str_replace('.', '/', $viewName);
@@ -84,7 +99,12 @@ class StaticsProvider extends ServiceProvider
         ]);
     }
 
-    public function loadStatics($type)
+    /**
+     * 根据类型加载已经注册过的静态资源
+     * @param $type
+     * @return string
+     */
+    public function loadRegisteredStatics($type)
     {
         $output = [];
         switch ($type) {
@@ -106,18 +126,75 @@ class StaticsProvider extends ServiceProvider
         return implode("\n", $output);
     }
 
+    /**
+     * 通过script标签导入脚本资源
+     * @param $scripts
+     * @return string
+     */
+    public function importScripts($scripts)
+    {
+        $scripts = is_array($scripts) ? $scripts : [strval($scripts)];
+
+        $output = [];
+        foreach ($scripts as $resource) {
+            $url = $this->urlOfFile('js', $resource);
+            $output[] = "<script src=\"{$url}\" ></script>";
+        }
+
+        return implode("\n", $output);
+    }
+
+    /**
+     * 通过link标签导入样式资源
+     * @param $styles
+     * @return string
+     */
+    public function importStyles($styles)
+    {
+        $styles = is_array($styles) ? $styles : [strval($styles)];
+
+        $output = [];
+        foreach ($styles as $resource) {
+            $url = $this->urlOfFile('css', $resource);
+            $output[] = "<link rel=\"stylesheet\" href=\"{$url}\" >";
+        }
+
+        return implode("\n", $output);
+    }
+
+    /**
+     * 获取一个文件的URL
+     * @param $type
+     * @param $file
+     * @return string
+     */
     public function urlOfFile($type, $file)
     {
+        // hash映射查询的时候需要干掉后面的查询字符串
+        $queryPos = strpos($file, '?');
+        $filePath = ($queryPos === false ? $file : substr($file, 0, $queryPos));
+
         // 使用@抑制错误更简洁快速
-        $hash = @$this->staticsMap[$type][$file] ?: '';
+        $hash = @$this->staticsMap[$type][$filePath] ?: '';
+
+        // 如果没有找到hash，则默认用源文件
         if (empty($hash)) {
             return $this->server . '/' . $file;
         } else {
-            $extName = strrchr($file, '.');
-            return $this->server . '/dist/' . substr($file, 0, strlen($file) - strlen($extName)) . '_' . $hash . $extName;
+            // 否则，追加hash到文件路径中去
+            $extName = strrchr($filePath, '.'); // 文件扩展名
+            return implode([
+                $this->server, // http://xxxxx.xx
+                '/dist/' . substr($file, 0, strlen($filePath) - strlen($extName)) . '_' . $hash . $extName, // file path
+                ($queryPos === false ? '' : substr($file, $queryPos)), // query string
+            ]);
         }
     }
 
+    /**
+     * 获取静态资源的映射表
+     * @return array
+     */
     public function getStaticsMap()
     {
         return $this->staticsMap;
@@ -125,6 +202,7 @@ class StaticsProvider extends ServiceProvider
 
     /**
      * 更新静态映射文件
+     *
      * @param array $maps
      * @return int|false
      */
@@ -141,6 +219,7 @@ class StaticsProvider extends ServiceProvider
 
     /**
      * 把一个东东转换成array
+     *
      * @param $something
      * @return array
      */
@@ -196,15 +275,15 @@ class StaticsProvider extends ServiceProvider
 
         // 自动创建目录
         $fileDir = dirname($filePath);
-        if (!is_dir($fileDir)){
-            if (mkdir($fileDir, 0777, true) === false){
+        if (!is_dir($fileDir)) {
+            if (mkdir($fileDir, 0777, true) === false) {
                 throw new RuntimeException("Unable to create directory: {$fileDir}");
             }
         }
 
         // OK 没问题了，写入目标文件
         $putResult = file_put_contents($filePath, $content, LOCK_EX);
-        if ($putResult === false){
+        if ($putResult === false) {
             throw new RuntimeException("Unable to write file: {$filePath}");
         }
 
@@ -228,7 +307,7 @@ class StaticsProvider extends ServiceProvider
 
             while (!feof($handle)) {
                 $line = fgets($handle);
-                if ($line !== false){
+                if ($line !== false) {
                     $output[] = rtrim($line, "\n");
                 }
             }

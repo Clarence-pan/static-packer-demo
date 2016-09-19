@@ -1,8 +1,12 @@
 @extends('layouts.basic')
 
 @registerStatics([
-    'css' => ['lib/common.css'],
-    'js' =>  ['lib/jquery.js', 'lib/underscore.js', 'lib/common.js'],
+    'css' => ['common.css'],
+    'js' =>  [
+        'lib/common.js?v1',
+        'common.js?amd=on',
+        'lib/requirejs.js?v1',
+     ],
 ])
 
 @if (empty($dontRegisterDefaultStatics))
@@ -10,11 +14,16 @@
 @endif
 
 @section('styles')
-    @loadStatics('css')
+    @loadRegisteredStatics('css')
 @endsection
 
 @section('scripts')
-    @loadStatics('js')
+    <!--[if lt IE 9]>
+        @importScripts('lib/shims-for-ie8.js?v3')
+    <![endif]-->
+
+    <script>window.STATIC_SERVER = <?php echo json_encode(env('STATICS_SERVER')) ?>;</script>
+    @loadRegisteredStatics('js')
 @endsection
 
 @section('body')

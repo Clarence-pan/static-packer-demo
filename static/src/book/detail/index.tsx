@@ -19,4 +19,3 @@ class App extends React.Component<any, any>{
 
 ReactDOM.render(<App />, $('<div id="react-container"></div>').appendTo('body')[0]);
 
-

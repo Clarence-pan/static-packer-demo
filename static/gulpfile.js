@@ -3,17 +3,21 @@ require('dotenv').load();
 
 var gulp = require('gulp');
 var runSequence = require('run-sequence');
+var sourcemaps = require('gulp-sourcemaps');
 var minify = require('gulp-minify');
 var cleanCss = require('gulp-clean-css');
+var rename = require('gulp-rename');
+var concat = require('gulp-concat');
+var gutil = require('gulp-util');
 var del = require('del');
 var named = require('vinyl-named');
 var _ = require('lodash');
-var gutil = require('gulp-util');
 var path = require('path');
-var rename = require('gulp-rename');
 var md5 = require('gulp-md5');
 var glob = require('glob');
 var unique = require('array-unique');
+var fs = require('fs');
+var Promise = require('promise');
 
 var webpackIndividuals = require('./plugins/webpack-individuals');
 var staticsHashes = require('./plugins/statics-hashes');
@@ -22,13 +26,16 @@ var SimpleFileCache = require('./plugins/simple-file-cache.js');
 
 
 // 静态资源的hash表
-var hashMap = {};
+var staticsMapTableCache = {};
 
 // 文件缓存
 var cache = new SimpleFileCache();
 
 // 主要内容的目录
 var SRC_DIR = './src';
+
+/// lib内容的src
+var LIB_SRC = './lib/src';
 
 // 构建完成的目录
 var DIST_DIR = './public/dist';
@@ -57,23 +64,23 @@ gulp.task('build-src-webpack', function () {
             return file.destName;
         }))
         .pipe(optimize({
-            dest: function(file){
+            dest: function (file) {
                 return glob(path.join(file.cwd, DIST_DIR, path.dirname(file.relativePath) + '*.js'), {sync: true});
             },
-            depends: function(file){
+            depends: function (file) {
                 var depends = cache.get("webpack_depends_of_" + file.path);
                 return depends ? depends : [];
             }
         }))
-        .pipe(webpackIndividuals(config, null, function(err, stats, file){
-            if (err || !stats || !file){
+        .pipe(webpackIndividuals(config, null, function (err, stats, file) {
+            if (err || !stats || !file) {
                 return;
             }
 
             cache.set("webpack_depends_of_" + file.path, unique([file.path].concat(stats.compilation.fileDependencies)));
         }))
         .pipe(gulp.dest(DIST_DIR))
-        .pipe(staticsHashes.gather({to: hashMap}));
+        .pipe(staticsHashes.gather({to: staticsMapTableCache}));
 });
 
 // css单独构建
@@ -81,10 +88,10 @@ gulp.task('build-css-files', function () {
     return gulp
         .src(sourceCssFiles, {base: SRC_DIR})
         .pipe(optimize({
-            dest: function(file){
+            dest: function (file) {
                 return glob(path.join(file.cwd, DIST_DIR, path.dirname(file.relativePath) + '*.css'), {sync: true});
             },
-            depends: function(file){
+            depends: function (file) {
                 return [file.path];
             }
         }))
@@ -98,19 +105,86 @@ gulp.task('build-css-files', function () {
         }))
         .pipe(md5(20))
         .pipe(gulp.dest(DIST_DIR))
-        .pipe(staticsHashes.gather({to: hashMap}));
+        .pipe(staticsHashes.gather({to: staticsMapTableCache}));
 });
 
 // 构建完成后更新hash
 gulp.task('update-hashes', function (done) {
-    staticsHashes.update(hashMap, null, function(error){
+    staticsHashes.update(staticsMapTableCache, null, function (error) {
         done(error);
     });
 });
 
+// 保存hash关系的
+gulp.task('save-manifest', function (done) {
+    var manifestFile = path.resolve(DIST_DIR, 'manifest.json');
+    var manifestData = {};
+
+    fs.readFile(manifestFile, 'utf8', function (err, data) {
+        if (err) {
+            // 忽略不存在的文件
+            if (err.code === 'ENOENT') {
+                data = '{}';
+            } else {
+                return done(err);
+            }
+        }
+
+        try {
+            manifestData = JSON.parse(data) || {};
+        } catch (e) {
+            console.log("Warning: failed to parse old manifest data. Empty object assumed.");
+        }
+
+        for (var type in staticsMapTableCache) {
+            if (!staticsMapTableCache.hasOwnProperty(type)) {
+                continue;
+            }
+
+            var files = staticsMapTableCache[type];
+            for (var file in files) {
+                if (!files.hasOwnProperty(file)) {
+                    continue;
+                }
+
+                (function (hash) {
+                    manifestData[file] = file.replace(/\.\w+$/, function (whole) {
+                        return '_' + hash + whole;
+                    });
+                })(files[file]);
+            }
+        }
+
+        manifestData = JSON.stringify(manifestData, null, ' ');
+
+        // 除了保存一份json的，顺便保存一份jsonp版本的，方便跨域查询
+        Promise.all([
+            new Promise(function (resolve, reject) {
+                fs.writeFile(path.resolve(DIST_DIR, 'manifest.json'), manifestData, 'utf8', callbackToPromise(resolve, reject));
+            }),
+            new Promise(function (resolve, reject) {
+                var manifestJsonpCode = 'window.manifestJsonpCallback && window.manifestJsonpCallback(' + manifestData + ');';
+                fs.writeFile(path.resolve(DIST_DIR, 'manifest.js'), manifestJsonpCode, 'utf8', callbackToPromise(resolve, reject));
+            })
+        ]).then(done.bind(null, null), done);
+
+        function callbackToPromise(resolve, reject) {
+            return function (err, data) {
+                if (err) {
+                    console.log(err);
+                    reject(err);
+                } else {
+                    resolve(data);
+                }
+            };
+        }
+    });
+
+});
+
 // 保存缓存的内容
-gulp.task('save-caches', function(done){
-    cache.save(function(error){
+gulp.task('save-caches', function (done) {
+    cache.save(function (error) {
         done(error);
     });
 });
@@ -119,7 +193,7 @@ gulp.task('save-caches', function(done){
 gulp.task('build', function (done) {
     return runSequence(
         ['build-src-webpack', 'build-css-files'],
-        ['update-hashes', 'save-caches'],
+        ['update-hashes', 'save-caches', 'save-manifest'],
         done);
 });
 
@@ -127,16 +201,19 @@ gulp.task('build', function (done) {
 gulp.task('watch', function () {
     var buildTimer = null;
 
-    runSequence('build', function(){
+    runSequence('build', function () {
         gutil.log('-----------------------------------------------');
         gutil.log('begin watching...');
-        gulp.watch(watchFiles, function(event){
+        gulp.watch(watchFiles, function (event) {
             console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+
+            // 清理缓存
+            staticsMapTableCache = {};
             optimize.cleanCache({file: event.path});
 
             if (!buildTimer) {
-                buildTimer = setTimeout(function(){
-                    runSequence('build', function(){
+                buildTimer = setTimeout(function () {
+                    runSequence('build', function () {
                         buildTimer = null;
                         gutil.log('-----------------------------------------------');
                         gutil.log('still watching...');
@@ -146,7 +223,8 @@ gulp.task('watch', function () {
         });
     });
 
-    return new Promise(function(){});
+    return new Promise(function () {
+    });
 });
 
 // 清理构建后的文件
@@ -157,7 +235,7 @@ gulp.task('clean', function () {
 });
 
 // 默认启动的任务
-gulp.task('default', function(done){
+gulp.task('default', function (done) {
     return runSequence('build', done);
 });
 
@@ -166,14 +244,47 @@ gulp.task('rebuild', function (done) {
     return runSequence('clean', 'default', done);
 });
 
-// lib目录下的构建
-gulp.task('build-lib', function () {
+gulp.task('webpack-lib', function(){
     var config = require('./lib/webpack.config.js');
-    return gulp.src('.')
-        .pipe(webpack(config))
-        .pipe(gulp.dest('public/lib/'));
+    return gulp.src(['./lib/src/**/index.js', './lib/src/**/index.ts'], {base: LIB_SRC})
+        .pipe(named(function (file) {
+            file.baseDir = path.resolve(file.base);
+            file.destPath = path.resolve(path.dirname(file.path) + path.extname(file.path));
+            file.destName = path.relative(file.baseDir, file.destPath).replace(/\.\w+$/, '');
+            return file.destName;
+        }))
+        .pipe(webpackIndividuals(config))
+        .pipe(gulp.dest('./public/lib'));
 });
 
+// 合并shim文件等操作
+gulp.task('lib-others', function () {
+    var concatFiles = [
+        './lib/src/polyfills/es5-shim.js',
+        './lib/src/polyfills/es5-sham.js',
+        './lib/src/polyfills/console-polyfill.js',
+        './lib/src/polyfills/promise.js',
+        './lib/src/polyfills/ext-sham.js'
+    ];
+    return gulp.src(concatFiles, {base: LIB_SRC})
+        .pipe(concat('shims-for-ie8.js'))
+        .pipe(sourcemaps.init())
+            .pipe(minify({
+                ext: {src: '-debug.js', min: '.js'}
+            }))
+        .pipe(sourcemaps.write('.'))
+        .pipe(gulp.dest('./public/lib'));
+});
+
+// lib目录下的构建
+gulp.task('build-lib', function (done) {
+    return runSequence(['webpack-lib', 'lib-others']);
+});
+
+// 重新构建
+gulp.task('rebuild-all', function (done) {
+    return runSequence('clean', ['default', 'build-lib'], done);
+});
 
 function dd() {
     console.log.apply(console, arguments);

@@ -10,35 +10,11 @@ var dist_dir = path.resolve(__dirname, '../public/lib');
 var public_dir = path.resolve(__dirname, '../public');
 var node_modules_dir = path.resolve(__dirname, '../node_modules');
 
-// 单独的每个页面的入口文件
-var individualEntries = (function () {
-    var entries = {};
-
-    resolveEntries('index.js');
-    resolveEntries('index.jsx');
-    resolveEntries('index.ts');
-    resolveEntries('index.tsx');
-
-    return entries;
-
-    function resolveEntries(entryName) {
-        var entriesFiles = glob(path.join(src_dir, '**/' + entryName), {sync: true});
-        entriesFiles.forEach(function (entry) {
-            var targetFile = path.dirname(entry.substring(src_dir.length + 1));
-            entries[targetFile] = entry;
-        });
-    }
-})();
 
 // 生成webpack的配置
 module.exports = {
     devtool: "source-map",
-    entry: _.extend(
-        {
-            //'webpack-dev-server/client': 'webpack-dev-server/client',
-            //'webpack/hot/only-dev-server': 'webpack/hot/only-dev-server',
-        },
-        individualEntries),
+    entry: null, // 入口定义在外面
 
     // 有两种方式很方便地导入外部库：
     // 1. 使用alias映射到本地文件 -- 最终可以通过CommonsChunkPlugin合并到vendors.js中
@@ -78,15 +54,11 @@ module.exports = {
         ]
     },
     plugins: [
-        new webpack.optimize.UglifyJsPlugin({
-            compress: {
-                warnings: false,
-            },
-            output: {
-                comments: false,
-            },
+        process.env.MINIFY_SRC && new webpack.optimize.UglifyJsPlugin({
+            compress: { warnings: false },
+            output: { comments: false }
         })
-    ]
+    ].filter(function(x){ return !!x; })
 };
 
 //console.log(module.exports);

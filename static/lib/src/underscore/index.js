@@ -1,1 +1,1 @@
-window._ = require('underscore');
+window._ = require('lodash');

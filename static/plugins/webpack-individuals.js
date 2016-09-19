@@ -51,10 +51,24 @@ function webpackIndividuals(config, specialWebpack, doneCallback) {
                     return;
                 }
 
+                var finalName, finalExt = path.extname(val.existsAt) ;
+                if (!cfg.output || !cfg.output.filename){
+                    finalName = file.named + '_' + stats.hash + finalExt;
+                } else {
+                    finalName = cfg.output.filename.replace('[name]', file.named).replace('[hash]', stats.hash);
+                }
+
+                // 将.map文件的后缀名加上
+                var curExt = path.extname(finalName);
+                if (curExt !== finalExt){
+                    finalName = finalName + finalExt;
+                    //finalName = finalName.substring(0, finalName.length - curExt.length) + finalExt;
+                }
+
                 self.push(new gutil.File({
                     base: file.base,
                     cwd: file.cwd,
-                    path: path.join(file.base, file.named + '_' + stats.hash + path.extname(val.existsAt)),
+                    path: path.join(file.base, finalName),
                     contents: new Buffer(val.source()),
                     hash: stats.hash,
                     depends: stats.compilation.fileDependencies,

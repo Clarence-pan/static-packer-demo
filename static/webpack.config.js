@@ -56,10 +56,13 @@ module.exports = {
         'jquery': 'window.jQuery',
         'underscore': 'window._',
         'common': 'window.Common',
+        'app/common': 'window.Common',
+        'requirejs': 'window.require',
         'amd-require': 'window.require',
         'amd-define': 'window.define',
         'react': 'window.React',
         'react-dom': 'window.ReactDOM',
+        'promise': 'window.Promise',
     },
     output: {
         path: dist_dir,
@@ -83,17 +86,11 @@ module.exports = {
         ]
     },
     plugins: [
-        //new webpack.optimize.CommonsChunkPlugin('vendors', 'vendors.js'),
-        //
-        //new webpack.optimize.UglifyJsPlugin({
-        //    compress: {
-        //        warnings: false,
-        //    },
-        //    output: {
-        //        comments: false,
-        //    },
-        //})
-    ]
+        process.env.MINIFY_SRC && new webpack.optimize.UglifyJsPlugin({
+            compress: { warnings: false },
+            output: { comments: false }
+        })
+    ].filter(function(x){ return !!x; })
 };
 
 //console.log(module.exports);
