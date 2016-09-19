@@ -11,9 +11,11 @@ var log = (function () {
 
 var Common = {
     extend: extend,
-    log: log,
     resolveSelfScriptSrcUrl: resolveSelfScriptSrcUrl,
     resolveSelfScriptShortName: resolveSelfScriptShortName,
+    urlify: urlify,
+    log: log,
+    dir: dir
 };
 
 // 合并Common模块
@@ -229,4 +231,9 @@ function dir(obj, onlyOwned) {
     }
 
     return keys;
+}
+
+
+function urlify(str){
+    return (str + '').replace(/\\/g, '/');
 }

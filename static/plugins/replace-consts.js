@@ -1,5 +1,5 @@
 var path = require('path');
-var gutil = require('gutil');
+var gutil = require('gulp-util');
 var through = require('through2');
 var _ = require('lodash');
 
@@ -12,18 +12,20 @@ function replaceConsts(options) {
         only: null, // 只匹配哪些文件 -- 用正则表达式匹配文件路径
         except: null, // 排除哪些文件 -- 正则表达式匹配文件路径
         consts: function(file) {
-            var filePath = path.resolve(file.path);
+            var filePath = path.resolve(file.srcPath || file.path);
             var fileDir = path.dirname(filePath);
             var baseDir = options.base || path.resolve(file.base);
             var relativePath = path.relative(baseDir, filePath);
             var relativeDir = path.dirname(relativePath);
+            var named = file.named;
 
             return {
                 __FILE__: JSON.stringify(filePath),
                 __DIR__: JSON.stringify(fileDir),
                 __BASE_DIR__: JSON.stringify(baseDir),
                 __RELATIVE_PATH__: JSON.stringify(relativePath),
-                __RELATIVE_DIR__: JSON.stringify(relativeDir)
+                __RELATIVE_DIR__: JSON.stringify(relativeDir),
+                __NAMED__: JSON.stringify(named)
             };
         },
         extraConsts: function(){}
@@ -56,10 +58,9 @@ function replaceConsts(options) {
         }
 
         var consts = _.extend(options.consts(file), options.extraConsts(file));
-        console.log('replace consts: ', consts);
 
         var fileContents = file.contents.toString();
-        var newContents = fileContents.replace(/__[0-9a-zA-Z_]__/g, function(x){
+        var newContents = fileContents.replace(/__[0-9a-zA-Z_]+__/g, function(x){
             return x in consts ? consts[x] : x;
         });
 
@@ -72,3 +73,29 @@ function replaceConsts(options) {
 
 module.exports = replaceConsts;
 
+
+function dir(obj, onlyOwned) {
+    if (obj === null) {
+        return '<null>';
+    } else if (typeof obj === 'undefined') {
+        return '<undefined>';
+    }
+
+    var keys = {};
+    for (var k in obj) {
+        if (!obj.hasOwnProperty(k) && onlyOwned) {
+            continue;
+        }
+
+        var v = obj[k];
+        if (typeof v === 'function') {
+            keys[k] = '<function>';
+        } else if (typeof v === 'object') {
+            keys[k] = '<object>';
+        } else {
+            keys[k] = v;
+        }
+    }
+
+    return keys;
+}

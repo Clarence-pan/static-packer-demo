@@ -65,13 +65,16 @@ function webpackIndividuals(config, specialWebpack, doneCallback) {
                     //finalName = finalName.substring(0, finalName.length - curExt.length) + finalExt;
                 }
 
-                self.push(new gutil.File({
+                self.push(_.extend(new gutil.File({
                     base: file.base,
                     cwd: file.cwd,
                     path: path.join(file.base, finalName),
                     contents: new Buffer(val.source()),
+                }), {
+                    srcPath: file.path,
                     hash: stats.hash,
                     depends: stats.compilation.fileDependencies,
+                    named: file.named,
                 }));
             });
 
