@@ -3,9 +3,15 @@ import _ from 'underscore';
 import common from 'common';
 import prompt from './prompt';
 
+console.log('jQuery: ', $);
+console.log('_: ', _);
+console.log('common: ', common);
+console.log('prompt: ', prompt);
+
+
 $("<div class='message'>Hello from js: this is home page!</div>").appendTo('body');
 
-console.log('prompt: ', prompt);
+
 console.log("This message is 66666666666!");
 
 $("<div><a href='javascript:;'>Show Prompt</a></div>").appendTo('body').on('click', function(){

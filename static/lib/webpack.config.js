@@ -54,7 +54,7 @@ module.exports = {
         ]
     },
     plugins: [
-        process.env.MINIFY_SRC && new webpack.optimize.UglifyJsPlugin({
+        process.env.MINIFY_LIB && new webpack.optimize.UglifyJsPlugin({
             compress: { warnings: false },
             output: { comments: false }
         })

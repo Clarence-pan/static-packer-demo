@@ -168,11 +168,21 @@ class StaticsProvider extends ServiceProvider
      * @param $file
      * @return string
      */
-    public function urlOfFile($type, $file)
+    public function urlOfFile($type, $file=null)
     {
+        if ($file === null){
+            list($type, $file) = [null, $type];
+        }
+
         // hash映射查询的时候需要干掉后面的查询字符串
         $queryPos = strpos($file, '?');
         $filePath = ($queryPos === false ? $file : substr($file, 0, $queryPos));
+
+        // 如果没有传类型，则自动根据后缀名识别类型
+        if (!$type){
+            $extName = strrchr($filePath, '.'); // 文件扩展名
+            $type = strtolower(substr($extName, 1));
+        }
 
         // 使用@抑制错误更简洁快速
         $hash = @$this->staticsMap[$type][$filePath] ?: '';
@@ -182,7 +192,7 @@ class StaticsProvider extends ServiceProvider
             return $this->server . '/' . $file;
         } else {
             // 否则，追加hash到文件路径中去
-            $extName = strrchr($filePath, '.'); // 文件扩展名
+            $extName = isset($extName) ? $extName : strrchr($filePath, '.'); // 文件扩展名
             return implode([
                 $this->server, // http://xxxxx.xx
                 '/dist/' . substr($file, 0, strlen($filePath) - strlen($extName)) . '_' . $hash . $extName, // file path

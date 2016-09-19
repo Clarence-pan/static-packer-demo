@@ -3,7 +3,6 @@ require('dotenv').load();
 
 var gulp = require('gulp');
 var runSequence = require('run-sequence');
-var sourcemaps = require('gulp-sourcemaps');
 var minify = require('gulp-minify');
 var cleanCss = require('gulp-clean-css');
 var rename = require('gulp-rename');
@@ -22,6 +21,7 @@ var Promise = require('promise');
 var webpackIndividuals = require('./plugins/webpack-individuals');
 var staticsHashes = require('./plugins/statics-hashes');
 var optimize = require('./plugins/dependency-optimize');
+var replaceConsts = require('./plugins/replace-consts');
 var SimpleFileCache = require('./plugins/simple-file-cache.js');
 
 
@@ -33,9 +33,6 @@ var cache = new SimpleFileCache();
 
 // 主要内容的目录
 var SRC_DIR = './src';
-
-/// lib内容的src
-var LIB_SRC = './lib/src';
 
 // 构建完成的目录
 var DIST_DIR = './public/dist';
@@ -79,6 +76,7 @@ gulp.task('build-src-webpack', function () {
 
             cache.set("webpack_depends_of_" + file.path, unique([file.path].concat(stats.compilation.fileDependencies)));
         }))
+        .pipe(replaceConsts({only: /\.js$/}))
         .pipe(gulp.dest(DIST_DIR))
         .pipe(staticsHashes.gather({to: staticsMapTableCache}));
 });
@@ -244,42 +242,8 @@ gulp.task('rebuild', function (done) {
     return runSequence('clean', 'default', done);
 });
 
-gulp.task('webpack-lib', function(){
-    var config = require('./lib/webpack.config.js');
-    return gulp.src(['./lib/src/**/index.js', './lib/src/**/index.ts'], {base: LIB_SRC})
-        .pipe(named(function (file) {
-            file.baseDir = path.resolve(file.base);
-            file.destPath = path.resolve(path.dirname(file.path) + path.extname(file.path));
-            file.destName = path.relative(file.baseDir, file.destPath).replace(/\.\w+$/, '');
-            return file.destName;
-        }))
-        .pipe(webpackIndividuals(config))
-        .pipe(gulp.dest('./public/lib'));
-});
-
-// 合并shim文件等操作
-gulp.task('lib-others', function () {
-    var concatFiles = [
-        './lib/src/polyfills/es5-shim.js',
-        './lib/src/polyfills/es5-sham.js',
-        './lib/src/polyfills/console-polyfill.js',
-        './lib/src/polyfills/promise.js',
-        './lib/src/polyfills/ext-sham.js'
-    ];
-    return gulp.src(concatFiles, {base: LIB_SRC})
-        .pipe(concat('shims-for-ie8.js'))
-        .pipe(sourcemaps.init())
-            .pipe(minify({
-                ext: {src: '-debug.js', min: '.js'}
-            }))
-        .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest('./public/lib'));
-});
-
-// lib目录下的构建
-gulp.task('build-lib', function (done) {
-    return runSequence(['webpack-lib', 'lib-others']);
-});
+// 引入lib的构建配置
+require('./gulpfile.lib.js');
 
 // 重新构建
 gulp.task('rebuild-all', function (done) {
