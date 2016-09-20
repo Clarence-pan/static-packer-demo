@@ -14,8 +14,27 @@
 9. 首屏优化
 10. 支持以AMD方式异步加载后续代码和资源
 
+效果：
+====
 
-初始化:
+全量构建时间：25秒 ===> 增量构建时间: 0.2秒
+
+全量构建:
+-------
+
+![](./screenshots/gulp-rebuild-all_01.jpg)
+
+![](./screenshots/gulp-rebuild-all_02.jpg)
+
+
+增量构建：
+--------
+
+![](./screenshots/gulp-build-all.jpg)
+
+
+
+安装与初始化:
 =======
 
 1. 初始化动态内容： `cd dynamic && composer init`
