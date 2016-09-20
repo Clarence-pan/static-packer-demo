@@ -34,8 +34,6 @@ $('<div><a href="javascript:;">Show message-with-less</a><div class="message"></
         console.log('You clicked: [' + $btn.text() + ']');
         common.initReact()
             .then(function(){
-                console.log("React: %o", window.React);
-                console.log("ReactDOM: %o", window.ReactDOM);
                 return common.amdRequire(['components/message-with-less']);
             })
             .then(function(modules){
