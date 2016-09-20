@@ -11,6 +11,8 @@
 |
 */
 
-$app->get('/', function () use ($app) {
-    return $app->version();
-});
+$app->get('/', 'HomeController@index');
+
+
+$app->register(Clarence\LumenDefaultRoutes\DefaultRouteProvider::class);
+

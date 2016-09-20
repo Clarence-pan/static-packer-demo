@@ -4,9 +4,50 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "eb888ea84a45675db2bc1f4dd4da889d",
-    "content-hash": "be56596918ef42a15b75d881aaedbd55",
+    "hash": "fd8400b43b0e1543046bd42277311a01",
+    "content-hash": "1876cb40e077ad6c7d6f50711a3b47e3",
     "packages": [
+        {
+            "name": "clarence/lumen-default-routes",
+            "version": "v1.0.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Clarence-pan/lumen-default-routes.git",
+                "reference": "95495df446243c73cc5532d93a0da5c5acf0c699"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://packagist.phpcomposer.com/files/Clarence-pan/lumen-default-routes/95495df446243c73cc5532d93a0da5c5acf0c699.zip",
+                "reference": "95495df446243c73cc5532d93a0da5c5acf0c699",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/lumen-framework": "5.2.*",
+                "php": ">=5.5"
+            },
+            "require-dev": {
+                "mockery/mockery": "^0.9.4",
+                "phpunit/phpunit": "4.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Clarence\\LumenDefaultRoutes\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Clarence",
+                    "email": "clarence-pan@foxmail.com"
+                }
+            ],
+            "description": "Default routes for laravel",
+            "time": "2016-04-22 15:00:29"
+        },
         {
             "name": "doctrine/inflector",
             "version": "v1.1.0",
