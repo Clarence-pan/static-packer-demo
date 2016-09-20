@@ -62,6 +62,12 @@ function updateStaticsHashes(hashes, options, done) {
         apiKey: process.env.UPDATE_STATICS_MAP_API_KEY,
     }, options || {});
 
+    if (Object.keys(hashes).length <= 0){
+        gutil.log("No files updated.");
+        done();
+        return;
+    }
+
     gutil.log("Updated files: " + formatUpdatedFilesHashes(hashes));
 
     if (options.apiType === 'shell') {

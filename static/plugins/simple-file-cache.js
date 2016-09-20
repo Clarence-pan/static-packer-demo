@@ -36,6 +36,16 @@ SimpleFileCache.create = function(options){
     return new SimpleFileCache(options);
 };
 
+
+var instance = null;
+SimpleFileCache.instance = function(){
+    if (instance){
+        return instance;
+    }
+
+    return (instance = this.create.apply(this, arguments));
+};
+
 SimpleFileCache.prototype.load = function(){
     try {
         this.data = JSON.parse(fs.readFileSync(this.options.file, 'utf8'));

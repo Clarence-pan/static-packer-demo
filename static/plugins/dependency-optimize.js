@@ -51,6 +51,7 @@ function dependencyOptimize(options){
         }
 
         f.relativePath = path.relative(f.base, f.path);
+        f.named = file.named;
 
         var dests = strAsArray(options.dest(f));
         var depends = strAsArray(options.depends(f));
@@ -153,10 +154,12 @@ function isAnyNewerThan(time, files, callback)
 {
     if (time <= 0){
         callback(true);
+        return;
     }
 
     if (!files || !files.length){
         callback(false);
+        return;
     }
 
     var filesCount = files.length;

@@ -29,7 +29,7 @@ var SimpleFileCache = require('./plugins/simple-file-cache.js');
 var staticsMapTableCache = {};
 
 // 文件缓存
-var cache = new SimpleFileCache();
+var cache = SimpleFileCache.instance();
 
 // 主要内容的目录
 var SRC_DIR = './src';
@@ -237,6 +237,7 @@ gulp.task('default', function (done) {
     return runSequence('build', done);
 });
 
+
 // 重新构建
 gulp.task('rebuild', function (done) {
     return runSequence('clean', 'default', done);
@@ -245,9 +246,14 @@ gulp.task('rebuild', function (done) {
 // 引入lib的构建配置
 require('./gulpfile.lib.js');
 
+// 全部构建
+gulp.task('build-all', function(done){
+    return runSequence(['build', 'build-lib'], done);
+});
+
 // 重新构建
 gulp.task('rebuild-all', function (done) {
-    return runSequence('clean', ['default', 'build-lib'], done);
+    return runSequence(['rebuild', 'rebuild-lib'], done);
 });
 
 function dd() {
