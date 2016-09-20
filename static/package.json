@@ -45,6 +45,7 @@
     "jshint-jsx": "^0.5.0",
     "jsxhint": "^0.15.1",
     "less": "^2.7.1",
+    "less-cli": "^1.0.0",
     "less-loader": "^2.2.3",
     "run-sequence": "^1.2.2",
     "script-loader": "^0.7.0",

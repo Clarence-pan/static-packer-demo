@@ -26,3 +26,16 @@ $("<div><a href='javascript:;'>Click here!</a></div>").appendTo('body').on('clic
     });
 });
 
+
+$('<div><a href="javascript:;">Show message-with-less</a><div class="message"></div></div>')
+    .appendTo('body')
+    .on('click', 'a', function(){
+        console.log('You clicked: [' + $(this).text() + ']');
+        common.amdRequire(['react', 'react-dom', 'components/message-with-less'], function(React, ReactDOM, Message){
+            console.log("React: %o", React);
+            console.log("ReactDOM: %o", ReactDOM);
+            console.log("Message: %o", Message);
+            ReactDOM.render(React.createElement(Message), $(this).siblings('.message')[0]);
+        }.bind(this));
+    });
+

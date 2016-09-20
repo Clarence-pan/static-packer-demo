@@ -25,7 +25,8 @@ function replaceConsts(options) {
                 __BASE_DIR__: JSON.stringify(baseDir),
                 __RELATIVE_PATH__: JSON.stringify(relativePath),
                 __RELATIVE_DIR__: JSON.stringify(relativeDir),
-                __NAMED__: JSON.stringify(named)
+                __NAMED__: JSON.stringify(named),
+                __DEBUG__: JSON.stringify(process.env)
             };
         },
         extraConsts: function(){}
