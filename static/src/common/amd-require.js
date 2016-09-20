@@ -26,19 +26,15 @@ export default {
             }.bind(this));
     },
     amdDefine: function (...args) {
-        return waitFor(function(){
-                return typeof window.define !== 'undefined';
-            })
-            .then(function(){
-                if (typeof window.define !== 'undefined') {
-                    return window.define(...args);
-                } else {
-                    this.log("Warning: window.require or window.require.define not exists! Have you imported requirejs.js in your page?");
-                }
-            }.bind(this));
+        if (typeof window.define !== 'undefined') {
+            return window.define(...args);
+        } else {
+            this.log("Warning: window.require or window.require.define not exists! Have you imported requirejs.js in your page?");
+        }
     },
     amdExport: function (moduleName, moduleDefine) {
         return this.amdDefine(moduleName, function () {
+            console.log('amd-export %o as ' + moduleName, moduleDefine);
             return moduleDefine;
         });
     },

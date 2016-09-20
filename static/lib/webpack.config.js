@@ -3,6 +3,7 @@ var webpack = require('webpack');
 var fs = require('fs');
 var glob = require('glob');
 var _ = require('underscore');
+var Es3ifyPlugin = require('es3ify-webpack-plugin');
 
 // 基本目录
 var src_dir = path.resolve(__dirname, 'src');
@@ -20,8 +21,8 @@ module.exports = {
     // 1. 使用alias映射到本地文件 -- 最终可以通过CommonsChunkPlugin合并到vendors.js中
     resolve: {
         alias: {
+            'jquery': path.resolve(node_modules_dir, 'jquery/jquery.js'),
             //'common': path.resolve(src_dir, 'common/common.js'),
-            //'jquery': path.resolve(public_dir, 'lib/jquery.js'),
             //'underscore': path.resolve(public_dir, 'lib/underscore.js'),
         },
         //extensions: ["", ".webpack.js", ".web.js", ".ts", ".tsx", ".js", ".jsx"]
@@ -57,7 +58,8 @@ module.exports = {
         process.env.MINIFY_LIB && new webpack.optimize.UglifyJsPlugin({
             compress: { warnings: false },
             output: { comments: false }
-        })
+        }),
+        new Es3ifyPlugin(),
     ].filter(function(x){ return !!x; })
 };
 

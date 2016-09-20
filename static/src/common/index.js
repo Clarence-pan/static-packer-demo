@@ -1,8 +1,13 @@
 import amdRequire from './amd-require';
 
-var log = (function () {
-    if (typeof console !== 'undefined' && console && console.log) {
-        return console.log.bind(console);
+var log = (function (...args) {
+    if (typeof console !== 'undefined' && typeof console.log === 'function') {
+        // 很奇怪，IE8上虽然支持console.log但是不支持bind
+        if (typeof console.log.bind === 'function'){
+            return console.log.bind(console);
+        } else {
+            return console.log(...args);
+        }
     } else {
         return function () {
         };

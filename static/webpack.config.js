@@ -3,6 +3,7 @@ var webpack = require('webpack');
 var fs = require('fs');
 var glob = require('glob');
 var _ = require('underscore');
+var Es3ifyPlugin = require('es3ify-webpack-plugin');
 
 // 基本目录
 var src_dir = path.resolve(__dirname, 'src');
@@ -89,7 +90,8 @@ module.exports = {
         process.env.MINIFY_SRC && new webpack.optimize.UglifyJsPlugin({
             compress: { warnings: false },
             output: { comments: false }
-        })
+        }),
+        new Es3ifyPlugin(),
     ].filter(function(x){ return !!x; })
 };
 
