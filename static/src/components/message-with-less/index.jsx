@@ -2,6 +2,10 @@ import common from 'common';
 import React from 'react';
 import './index.less';
 
+
+console.log(__NAMED__ + ': react: %o', React);
+console.log(__NAMED__ + ': React.Component: %o', React.Component);
+
 export default class Message extends React.Component {
     render(){
         return (
@@ -10,6 +14,6 @@ export default class Message extends React.Component {
     }
 }
 
-// 支持在页面上通过amd的方式进行加载组件
-common.amdExport(common.urlify(__NAMED__), Message);
-
+ //支持在页面上通过amd的方式进行加载组件
+//common.amdExport(common.urlify(__NAMED__), Message);
+common.amdExport(common.urlify(__NAMED__), {});

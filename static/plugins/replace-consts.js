@@ -2,6 +2,8 @@ var path = require('path');
 var gutil = require('gulp-util');
 var through = require('through2');
 var _ = require('lodash');
+var streamBuffers = require('stream-buffers');
+var readStreamToEnd = require('./read-stream-to-end');
 
 /**
  * 替换常量
@@ -26,7 +28,7 @@ function replaceConsts(options) {
                 __RELATIVE_PATH__: JSON.stringify(relativePath),
                 __RELATIVE_DIR__: JSON.stringify(relativeDir),
                 __NAMED__: JSON.stringify(named),
-                __DEBUG__: JSON.stringify(process.env)
+                __DEBUG__: JSON.stringify(process.env.DEBUG)
             };
         },
         extraConsts: function(){}
@@ -52,24 +54,39 @@ function replaceConsts(options) {
             return callback(null, file);
         }
 
-        // 暂时只支持buffer类型的文件 -- TODO: 对stream类型的文件的处理
-        if (!file.isBuffer()){
-            this.emit('error', new gutil.PluginError(PLUGIN_NAME, "Only buffer file supported. This is not a buffer file: " + file.path));
-            return callback(null, file);
-        }
-
         var consts = _.extend(options.consts(file), options.extraConsts(file));
 
-        var fileContents = file.contents.toString();
-        var newContents = fileContents.replace(/__[0-9a-zA-Z_]+__/g, function(x){
-            return x in consts ? consts[x] : x;
-        });
+        if (file.isStream()){
+            readStreamToEnd(file.contents).then(function(data){
+                var res =  replaceConstsOfString(data.toString(), consts);
+                file.contents = new streamBuffers.ReadableStreamBuffer({
+                    frequency: 10,
+                    chunkSize: 4096,
+                });
 
-        file.contents = new Buffer(newContents);
+                file.contents.put(res, 'utf8');
+                file.contents.stop();
+
+                return callback(null, file);
+            }, function(err){
+                gutil.emit('error', new gutil.PluginError(PLUGIN_NAME, "Failed to replace consts in file! file=" + file.path + ' error: ' + err));
+                return callback(err, file);
+            });
+
+            return null;
+        }
+
+        file.contents = new Buffer(replaceConstsOfString(file.contents.toString(), consts));
 
         return callback(null, file);
     });
 
+}
+
+function replaceConstsOfString(str, consts){
+    return str.replace(/__[0-9a-zA-Z_]+__/g, function(x){
+        return ((x in consts) && (typeof consts[x] === 'string')) ? consts[x] : x;
+    });
 }
 
 module.exports = replaceConsts;

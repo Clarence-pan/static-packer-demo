@@ -30,12 +30,18 @@ $("<div><a href='javascript:;'>Click here!</a></div>").appendTo('body').on('clic
 $('<div><a href="javascript:;">Show message-with-less</a><div class="message"></div></div>')
     .appendTo('body')
     .on('click', 'a', function(){
-        console.log('You clicked: [' + $(this).text() + ']');
-        common.amdRequire(['react', 'react-dom', 'components/message-with-less'], function(React, ReactDOM, Message){
-            console.log("React: %o", React);
-            console.log("ReactDOM: %o", ReactDOM);
-            console.log("Message: %o", Message);
-            ReactDOM.render(React.createElement(Message), $(this).siblings('.message')[0]);
-        }.bind(this));
+        var $btn = $(this);
+        console.log('You clicked: [' + $btn.text() + ']');
+        common.initReact()
+            .then(function(){
+                console.log("React: %o", window.React);
+                console.log("ReactDOM: %o", window.ReactDOM);
+                return common.amdRequire(['components/message-with-less']);
+            })
+            .then(function(modules){
+                var [Message] = modules;
+                console.log("Message: %o", Message);
+                common.renderReactComponent(Message).to($btn.siblings('.message'));
+            });
     });
 

@@ -12,6 +12,7 @@ var unique = require('array-unique');
 
 var optimize = require('./plugins/dependency-optimize');
 var SimpleFileCache = require('./plugins/simple-file-cache.js');
+var uglifyInplace = require('./plugins/uglify-inplace.js');
 
 // 文件缓存
 var cache = SimpleFileCache.instance();
@@ -21,13 +22,16 @@ var LIB_BASE = './lib';
 var LIB_SRC = './lib/src';
 var LIB_EXTERNAL = './lib/external';
 var LIB_DEST= './public/lib';
+var NODE_MODULES = './node_modules';
 
 // lib目录下的构建
 gulp.task('build-lib', function (done) {
     return runSequence([
         'lib-webpack-src',
         'lib-concat-shims',
-        'lib-sync-externals'
+        'lib-sync-externals',
+        'lib-build-react',
+        'lib-build-react-min'
     ], ['save-caches'], done);
 });
 
@@ -110,12 +114,59 @@ gulp.task('lib-concat-shims', function () {
                 return concatFiles;
             }
         }))
-        .pipe(concat('shims-for-ie8.js'))
-        .pipe(sourcemaps.init())
+        .pipe(concat(destFile))
         .pipe(minify({
-            ext: {src: '-debug.js', min: '.js'}
+            ext: {src: '-debug.js', min: '.js'},
+            outSourceMap: true,
         }))
-        .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest(LIB_DEST));
 });
 
+// react很坑，单独搞个：
+gulp.task('lib-build-react', function(){
+    var sourceFiles = [
+        NODE_MODULES + '/react/dist/react-with-addons.js',
+        NODE_MODULES + '/react-dom/dist/react-dom.js',
+        LIB_SRC + '/react/merge.js'
+    ];
+
+    var destFile = 'react.js';
+
+    return gulp
+        .src(sourceFiles, {base: LIB_SRC})
+        .pipe(optimize({
+            dest: function (file) {
+                return [path.resolve(LIB_DEST, destFile)];
+            },
+            depends: function (file) {
+                return sourceFiles;
+            }
+        }))
+        .pipe(concat(destFile))
+        .pipe(gulp.dest(LIB_DEST));
+});
+
+// 注意：react的压缩版本是要在生成环境下构建，这里则直接取他们打包好的即可
+gulp.task('lib-build-react-min', function(){
+    var sourceFiles = [
+        NODE_MODULES + '/react/dist/react-with-addons.min.js',
+        NODE_MODULES + '/react-dom/dist/react-dom.min.js',
+        LIB_SRC + '/react/merge.js'
+    ];
+
+    var destFile = 'react.min.js';
+
+    return gulp
+        .src(sourceFiles, {base: LIB_SRC})
+        .pipe(optimize({
+            dest: function (file) {
+                return [path.resolve(LIB_DEST, destFile)];
+            },
+            depends: function (file) {
+                return sourceFiles;
+            }
+        }))
+        .pipe(uglifyInplace())
+        .pipe(concat(destFile))
+        .pipe(gulp.dest(LIB_DEST));
+});

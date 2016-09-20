@@ -4,8 +4,8 @@ var config = {
     paths: {
         'jquery': '../lib/jquery',
         'underscore': '../lib/underscore',
-        'react': __DEBUG__ ? '../lib/react.min' : '../lib/react',
-        'react-dom': __DEBUG__ ? '../lib/react-dom.min' : '../lib/react-dom',
+        'react': __DEBUG_REACT__ ? '../lib/react' : '../lib/react.min',
+        'react-dom': __DEBUG_REACT__ ? '../lib/react' : '../lib/react.min',
     },
     shim: {
         //'react': {
@@ -22,7 +22,6 @@ export default {
     config: config,
     load: loadRequireJsConfig
 };
-
 
 function loadRequireJsConfig() {
     var callbackName = 'manifestJsonpCallback';

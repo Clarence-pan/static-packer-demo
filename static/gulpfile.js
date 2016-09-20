@@ -76,7 +76,14 @@ gulp.task('build-src-webpack', function () {
 
             cache.set("webpack_depends_of_" + file.path, unique([file.path].concat(stats.compilation.fileDependencies)));
         }))
-        .pipe(replaceConsts({only: /\.js$/}))
+        .pipe(replaceConsts({
+            only: /\.js$/,
+            extraConsts: function(){
+                return {
+                    __DEBUG_REACT__: JSON.stringify(process.env.DEBUG_REACT)
+                };
+            }
+        }))
         .pipe(gulp.dest(DIST_DIR))
         .pipe(staticsHashes.gather({to: staticsMapTableCache}));
 });

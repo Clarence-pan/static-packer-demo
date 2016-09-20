@@ -3,27 +3,42 @@ import requireJsConfig from './requirejs-config';
 
 export default {
     amdRequire: function (modules, doneCallback, errCallback) {
-        if (typeof doneCallback !== 'function') {
-            throw new Error('doneCallback must be a valid function!');
-        }
-
-        return initAmd()
+        var promise = initAmd()
             .then(function(){
-                this.log('require js ready to work!');
-                if (typeof window.require !== 'undefined') {
-                    window.require(modules, doneCallback);
-                } else {
+                console.log('require js ready to work!');
+                if (typeof window.require === 'undefined') {
                     var err = "window.require not exists! Have you imported requirejs.js in your page?";
-                    this.log("Error: " + err);
+                    console.log("Error: " + err);
                     throw new Error(err);
                 }
-            }.bind(this), function(err){
+
+                return new Promise(function(resolve, reject){
+                    window.require(modules, function(){
+                        resolve.call(this, [].slice.call(arguments, 0));
+                    }, function(err){
+                        reject(err);
+                    });
+                });
+            }, function(err){
                 if (typeof errCallback === 'function'){
                     errCallback(err);
                 }
 
-                this.log("Error: failed to init AMD require: %o", err);
-            }.bind(this));
+                console.log("Error: failed to init AMD require: %o", err);
+                throw err;
+            });
+
+        if (doneCallback){
+            promise = promise.then(function(modules){
+                doneCallback.apply(this, modules);
+            });
+        }
+
+        if (errCallback) {
+            promise = promise.then(null, errCallback);
+        }
+
+        return promise;
     },
     amdDefine: function (...args) {
         if (typeof window.define !== 'undefined') {
