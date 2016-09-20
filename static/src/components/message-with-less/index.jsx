@@ -15,5 +15,5 @@ export default class Message extends React.Component {
 }
 
  //支持在页面上通过amd的方式进行加载组件
-//common.amdExport(common.urlify(__NAMED__), Message);
-common.amdExport(common.urlify(__NAMED__), {});
+common.amdExport(common.urlify(__NAMED__), Message);
+

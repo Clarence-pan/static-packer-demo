@@ -192,17 +192,8 @@ function initReact(callback) {
         promise = Promise.resolve(window.React);
     } else {
         promise = new Promise(function (resolve, reject) {
-            Common.amdRequire(['react', 'react-dom'], function (React, ReactDOM) {
+            Common.amdRequire(['react'], function (React) {
                 console.log("[amdRequire] React: %o", React);
-                console.log("[amdRequire] ReactDOM: %o", ReactDOM);
-
-                React.render = ReactDOM.render.bind(ReactDOM);
-                React.findDOMNode = ReactDOM.findDOMNode.bind(ReactDOM);
-
-                // 导出到window上
-                window.React = React;
-                window.ReactDOM = ReactDOM;
-
                 resolve(React);
             });
         });

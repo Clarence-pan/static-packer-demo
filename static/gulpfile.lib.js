@@ -13,6 +13,8 @@ var unique = require('array-unique');
 var optimize = require('./plugins/dependency-optimize');
 var SimpleFileCache = require('./plugins/simple-file-cache.js');
 var uglifyInplace = require('./plugins/uglify-inplace.js');
+var rawInclude = require('./plugins/raw-include.js');
+var combine = require('./plugins/combine.js');
 
 // 文件缓存
 var cache = SimpleFileCache.instance();
@@ -133,7 +135,7 @@ gulp.task('lib-build-react', function(){
     var destFile = 'react.js';
 
     return gulp
-        .src(sourceFiles, {base: LIB_SRC})
+        .src([LIB_SRC + '/react/merge.js'], {base: LIB_SRC})
         .pipe(optimize({
             dest: function (file) {
                 return [path.resolve(LIB_DEST, destFile)];
@@ -142,7 +144,10 @@ gulp.task('lib-build-react', function(){
                 return sourceFiles;
             }
         }))
-        .pipe(concat(destFile))
+        .pipe(rawInclude({
+            paths: combine(['react', 'react-dom'], sourceFiles)
+        }))
+        .pipe(rename(destFile))
         .pipe(gulp.dest(LIB_DEST));
 });
 
@@ -157,7 +162,7 @@ gulp.task('lib-build-react-min', function(){
     var destFile = 'react.min.js';
 
     return gulp
-        .src(sourceFiles, {base: LIB_SRC})
+        .src([LIB_SRC + '/react/merge.js'], {base: LIB_SRC})
         .pipe(optimize({
             dest: function (file) {
                 return [path.resolve(LIB_DEST, destFile)];
@@ -167,6 +172,9 @@ gulp.task('lib-build-react-min', function(){
             }
         }))
         .pipe(uglifyInplace())
-        .pipe(concat(destFile))
+        .pipe(rawInclude({
+            paths: combine(['react', 'react-dom'], sourceFiles),
+        }))
+        .pipe(rename(destFile))
         .pipe(gulp.dest(LIB_DEST));
 });
