@@ -63,10 +63,6 @@ var sourceCssFiles = [
     './src/**/index.css'
 ];
 
-// 监视修改的文件
-var watchFiles = ['./src/**/*', './typings/**/*'].concat(buildSystemFiles);
-var watchAllFiles = ['./lib/**/*'].concat(watchFiles);
-
 // 通过webpack构建src目录下东东
 gulp.task('build-src-webpack', function () {
     var config = require('./webpack.config.js');
@@ -159,15 +155,75 @@ gulp.task('build', function (done) {
         done);
 });
 
-// 监听文件改动的处理
+var SIGNAL_WATCH_WORKER_RESTART = 99;
+
+// 监听文件改动的处理 -- 使用子进程以便有更好的容错性并能正确地处理构建系统的更新
 gulp.task('watch', function () {
-    var buildTimer = null;
+    var child_process = require('child_process');
+    return new Promise(function(resolve, reject){
+        return startWorker();
 
-    runSequence('build', function () {
-        gutil.log('-----------------------------------------------');
-        gutil.log('begin watching...');
-        gulp.watch(watchFiles, function (event) {
-            console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+        function startWorker(){
+
+            // 假定PATH中已经存在了gulp...
+            var workerSpawnOptions = {
+                stdio: 'inherit',
+                env: _.extend(process.env, require('dotenv').load() || {}), // 重新加载下环境变量否则老是不变会出问题的
+                shell: true
+            };
+            var worker = child_process.spawn('gulp', ['watch-worker'], workerSpawnOptions);
+            if (!worker){
+                return reject("Error: Cannot start gulp watch-worker!");
+            }
+
+            // 子进程使用了继承stdio，不需要再单独处理stdio即可。
+
+            worker.on('exit', function(code){
+                if (parseInt(code) === SIGNAL_WATCH_WORKER_RESTART){
+                    console.log("Worker requested restart. So restart it: ");
+                    startWorker();
+                } else {
+                    console.log("Worker quit with code: " + code + ". There may be something wrong. Let's restart it:");
+                    startWorker();
+                }
+            });
+        }
+    });
+});
+
+// 监听文件改动的工作进程
+gulp.task('watch-worker', function(){
+    console.log("Process env: " + JSON.stringify(process.env, null, ' '));
+
+    TaskQueue = require('./plugins/task-queue');
+
+    // 使用工作队列来保证顺序，并且允许合并队列
+    var taskQueue = new TaskQueue({
+        timeout: 30 * 1000, //ms
+        execute: function(task, done){
+            runSequence(task, done);
+        }
+    });
+
+    gutil.log('-----------------------------------------------');
+    gutil.log('begin watching...');
+
+    gulp.watch(['./src/**/*', './typings/**/*'], runTask('build'));
+    gulp.watch(['./lib/**/*'], runTask('build-lib'));
+    gulp.watch(buildSystemFiles, runTask('restart-watch'));
+
+    taskQueue.enqueue('build-lib');
+    taskQueue.enqueue('build');
+
+    taskQueue.run();
+
+    // 为了让进程不要退出，返回个永远不会结束的promise...
+    return new Promise(function () {});
+
+    // 执行任务的工厂方法
+    function runTask(task){
+        return function (event) {
+            console.log('File ' + event.path + ' was ' + event.type + ', running ' + task +' task...');
 
             // 更新manifests
             oldManifests = _.clone(staticsManifests.getDefaultManifests());
@@ -175,54 +231,17 @@ gulp.task('watch', function () {
             // 清理缓存
             optimize.cleanCache({file: event.path});
 
-            if (!buildTimer) {
-                buildTimer = setTimeout(function () {
-                    runSequence('build', function () {
-                        buildTimer = null;
-                        gutil.log('-----------------------------------------------');
-                        gutil.log('still watching...');
-                    });
-                }, 200);
-            }
-        });
-    });
-
-    return new Promise(function () {
-    });
+            // 开始构建
+            taskQueue.enqueue(task);
+        };
+    }
 });
 
-
-// 监听文件改动的处理
-gulp.task('watch-all', function () {
-    var buildTimer = null;
-
-    runSequence('build-all', function () {
-        gutil.log('-----------------------------------------------');
-        gutil.log('begin watching all...');
-        gulp.watch(watchFiles, function (event) {
-            console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
-
-            // 更新manifests
-            oldManifests = _.clone(staticsManifests.getDefaultManifests());
-
-            // 清理缓存
-            optimize.cleanCache({file: event.path});
-
-            if (!buildTimer) {
-                buildTimer = setTimeout(function () {
-                    runSequence('build-all', function () {
-                        buildTimer = null;
-                        gutil.log('-----------------------------------------------');
-                        gutil.log('still watching...');
-                    });
-                }, 200);
-            }
-        });
-    });
-
-    return new Promise(function () {
-    });
+// 重启监听
+gulp.task('restart-watch', function(){
+    process.exit(SIGNAL_WATCH_WORKER_RESTART);
 });
+
 
 // 清理构建后的文件
 gulp.task('clean', function () {

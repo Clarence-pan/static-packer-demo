@@ -16,6 +16,7 @@ var log = (function (...args) {
     }
 })();
 
+
 var Common = {
     env: env,
     log: log,
