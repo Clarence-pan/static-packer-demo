@@ -193,8 +193,6 @@ gulp.task('watch', function () {
 
 // 监听文件改动的工作进程
 gulp.task('watch-worker', function(){
-    console.log("Process env: " + JSON.stringify(process.env, null, ' '));
-
     TaskQueue = require('./plugins/task-queue');
 
     // 使用工作队列来保证顺序，并且允许合并队列
