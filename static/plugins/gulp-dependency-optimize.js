@@ -3,6 +3,43 @@ var gutil = require('gulp-util');
 var through = require('through2');
 var _ = require('lodash');
 var fs = require('fs');
+var glob = require('glob');
+
+// 默认的依赖
+var defaultDepends = [];
+
+module.exports = dependencyOptimize;
+module.exports.cleanCache = function(data) {
+    if (data && data.file){
+        delete mTimeCache[path.resolve(data.file)];
+    } else {
+        mTimeCache = {};
+    }
+};
+
+/**
+ * 设置默认的依赖
+ * @param dependsPatterns {Array<string>|string}
+ */
+module.exports.setDefaultDepends = function(dependsPatterns){
+    if (typeof dependsPatterns === 'string'){
+        dependsPatterns = [dependsPatterns];
+    }
+
+    defaultDepends = _.flatMap(dependsPatterns, function(parttern){
+        return glob(parttern, {sync: true});
+    });
+};
+
+/**
+ * 获取默认的依赖
+ * @returns {Array}
+ */
+module.exports.getDefaultDepends = function(){
+    return defaultDepends;
+};
+
+
 
 /**
  * 基于依赖关系进行优化gulp的构建速度 -- 像make一样，只对有改动的源代码进行构建。
@@ -54,7 +91,7 @@ function dependencyOptimize(options){
         f.named = file.named;
 
         var dests = strAsArray(options.dest(f));
-        var depends = strAsArray(options.depends(f));
+        var depends = strAsArray(options.depends(f)).concat(defaultDepends || []);
 
         if (_.isEmpty(dests) || _.isEmpty(depends)){
             return callback(null, file);
@@ -188,6 +225,8 @@ function isAnyNewerThan(time, files, callback)
 
 }
 
+// 保存文件修改时间的缓存
+// 文件绝对路径 ==> 修改时间的时间戳
 var mTimeCache = {};
 
 function getFileMTime(file, callback, timeout){
@@ -196,6 +235,12 @@ function getFileMTime(file, callback, timeout){
         return;
     }
 
+    if (file in mTimeCache){
+        callback(mTimeCache[file]);
+        return;
+    }
+
+    file = path.resolve(file);
     if (file in mTimeCache){
         callback(mTimeCache[file]);
         return;
@@ -227,11 +272,3 @@ function getFileMTime(file, callback, timeout){
     });
 }
 
-module.exports = dependencyOptimize;
-module.exports.cleanCache = function(data) {
-    if (data && data.file){
-        delete mTimeCache[data.file];
-    } else {
-        mTimeCache = {};
-    }
-};

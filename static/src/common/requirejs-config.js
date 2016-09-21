@@ -1,25 +1,23 @@
-var serverBase = (window.STATIC_SERVER || 'statics');
-var baseUrl = serverBase + '/dist';
-var config = {
-    baseUrl: baseUrl,
-    paths: {},
-    shim: {
-        'react': {
-            'exports': 'React'
-        },
-        'react-dom': {
-            'exports': 'ReactDOM'
-        }
-    }
-};
-
-
 export default {
-    config: config,
     load: loadRequireJsConfig
 };
 
 function loadRequireJsConfig() {
+    var serverBase = (window.Common.env.STATIC_SERVER || 'statics');
+    var baseUrl = serverBase + '/dist';
+    var config = {
+        baseUrl: baseUrl,
+        paths: {},
+        shim: {
+            'react': {
+                'exports': 'React'
+            },
+            'react-dom': {
+                'exports': 'ReactDOM'
+            }
+        }
+    };
+
     var callbackName = 'manifestJsonpCallback';
 
     return new Promise(function (resolve, reject) {
@@ -62,7 +60,7 @@ function loadRequireJsConfig() {
                         var realFilePath = file + '_' + hash;
 
                         // 注意： lib目录是在上一级
-                        if (libPrefixRegex.test(file)){
+                        if (libPrefixRegex.test(file)) {
                             config.paths[file] = '../' + realFilePath;
                             config.paths[file.replace(libPrefixRegex, '')] = '../' + realFilePath;
                         } else {

@@ -28,6 +28,17 @@ var replaceConsts = require('./plugins/gulp-replace-consts');
 var sourceConsts = require('./plugins/define-source-consts');
 var SimpleFileCache = require('./plugins/simple-file-cache');
 
+// 构建系统的文件
+var buildSystemFiles = [
+    './.env',
+    './*.js',
+    './*.json',
+    './plugins/*.*'
+];
+
+// 默认依赖关系：
+optimize.setDefaultDepends(buildSystemFiles);
+
 // 文件缓存
 var cache = SimpleFileCache.instance();
 
@@ -39,7 +50,7 @@ var DIST_DIR = './public/dist';
 
 // 维护文件的目录
 var MANIFEST_DIR = './public';
-staticsManifests.load({fromDir: MANIFEST_DIR});
+var oldManifests = _.clone(staticsManifests.load({fromDir: MANIFEST_DIR, async: false}));
 
 var sourceScripts = [
     './src/**/index.js',
@@ -52,7 +63,9 @@ var sourceCssFiles = [
     './src/**/index.css'
 ];
 
-var watchFiles = ['./src/**/*'];
+// 监视修改的文件
+var watchFiles = ['./src/**/*', './typings/**/*'].concat(buildSystemFiles);
+var watchAllFiles = ['./lib/**/*'].concat(watchFiles);
 
 // 通过webpack构建src目录下东东
 gulp.task('build-src-webpack', function () {
@@ -123,7 +136,10 @@ gulp.task('build-css-files', function () {
 
 // 构建完成后保存manifest信息
 gulp.task('save-manifest', function (done) {
-    staticsManifests.save({destDir: MANIFEST_DIR}, function (error) {
+    staticsManifests.save({
+        destDir: MANIFEST_DIR,
+        oldManifests: oldManifests
+    }, function (error) {
         done(error);
     });
 });
@@ -153,8 +169,10 @@ gulp.task('watch', function () {
         gulp.watch(watchFiles, function (event) {
             console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
 
+            // 更新manifests
+            oldManifests = _.clone(staticsManifests.getDefaultManifests());
+
             // 清理缓存
-            staticsManifests.reset();
             optimize.cleanCache({file: event.path});
 
             if (!buildTimer) {
@@ -173,10 +191,43 @@ gulp.task('watch', function () {
     });
 });
 
+
+// 监听文件改动的处理
+gulp.task('watch-all', function () {
+    var buildTimer = null;
+
+    runSequence('build-all', function () {
+        gutil.log('-----------------------------------------------');
+        gutil.log('begin watching all...');
+        gulp.watch(watchFiles, function (event) {
+            console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+
+            // 更新manifests
+            oldManifests = _.clone(staticsManifests.getDefaultManifests());
+
+            // 清理缓存
+            optimize.cleanCache({file: event.path});
+
+            if (!buildTimer) {
+                buildTimer = setTimeout(function () {
+                    runSequence('build-all', function () {
+                        buildTimer = null;
+                        gutil.log('-----------------------------------------------');
+                        gutil.log('still watching...');
+                    });
+                }, 200);
+            }
+        });
+    });
+
+    return new Promise(function () {
+    });
+});
+
 // 清理构建后的文件
 gulp.task('clean', function () {
     return del([
-        'public/dist/**/*'
+        'public/dist/**/*',
     ]);
 });
 

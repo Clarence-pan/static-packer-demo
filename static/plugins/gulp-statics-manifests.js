@@ -4,6 +4,7 @@ var through = require('through2');
 var child_process = require('child_process');
 var request = require('request');
 var _ = require('lodash');
+var fs = require('fs');
 
 var pfs = require('./promise-fs');
 
@@ -16,14 +17,17 @@ module.exports = {
             manifests = defaultStaticsManifests;
         }
 
-        return manifests[file];
+        return manifests[file.replace(/\\/g, '/')];
     },
     set: function(file, hash, manifests){
         if (typeof manifests === 'undefined'){
             manifests = defaultStaticsManifests;
         }
 
-        manifests[file] = hash;
+        manifests[file.replace(/\\/g, '/')] = hash;
+    },
+    getDefaultManifests: function(){
+        return defaultStaticsManifests;
     },
     gather: gatherStaticsManifests,
     save: saveStaticsManifests,
@@ -91,7 +95,7 @@ function loadStaticsManifests(options)
     options = _.extend({
         to: defaultStaticsManifests,
         fromDir: '',
-        async: false
+        async: true
     }, options || {});
 
     if (!options.fromDir){
@@ -133,9 +137,10 @@ function loadStaticsManifests(options)
             loadedData = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
         } catch (e) {
             console.log("Warning: failed to parse manifest data. Empty object assumed.");
+            console.log(e);
         }
 
-        return loadedData;
+        return _.extend(options.to, loadedData || {});
     }
 }
 
@@ -200,15 +205,15 @@ function notifyDynamicAboutManifests(manifests, options) {
         apiShellCmd: process.env.UPDATE_STATICS_MAP_SHELL_CMD,
         apiShellCwd: process.env.UPDATE_STATICS_MAP_SHELL_CWD,
         timeout: 30 * 1000, // ms
+        oldManifests: null
     }, options || {});
 
     if (Object.keys(manifests).length <= 0){
         gutil.log("No files updated.");
-        done();
-        return;
+        return Promise.resolve();
     }
 
-    gutil.log("Updated files: " + formatUpdatedFilesManifests(manifests));
+    gutil.log("Updated files: " + formatUpdatedFilesManifests(diffObjectPreserveKey(manifests, options.oldManifests || {})));
 
     if (options.apiType === 'shell') {
         return new Promise(function(resolve, reject){
@@ -337,3 +342,14 @@ function resetStaticsManifests(manifests){
     }
 }
 
+function diffObjectPreserveKey(a, b) {
+    var ret = [];
+
+    for (var k in a){
+        if (a.hasOwnProperty(k) && a[k] !== b[k]){
+            ret[k] = a[k];
+        }
+    }
+
+    return ret;
+}
