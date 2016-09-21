@@ -8,64 +8,19 @@
     $include('react-dom');
 
     // end wrapper of merge
+
     (function (g) {
-        if (typeof require === 'function') {
-            require.call(null, ['react', 'react-dom'], mergeReactAndReactDom);
-        } else {
-            mergeReactAndReactDom(g.React, g.ReactDOM);
-        }
-
-        function mergeReactAndReactDom(React, ReactDOM) {
-            if (React) {
-                g.React = React;
-            }
-
-            if (ReactDOM) {
-                g.ReactDOM = ReactDOM;
-            }
-
-            if (g.ReactDOM && g.React) {
-                if (!g.React.render) {
-                    g.React.render = g.ReactDOM.render.bind(g.ReactDOM);
-                }
-
-                if (!g.React.findDOMNode) {
-                    g.React.findDOMNode = g.ReactDOM.findDOMNode.bind(g.ReactDOM);
+        // 将ReactDOM的常用方法搞到React上，比较方便:
+        (function (React, ReactDOM){
+            if (ReactDOM && React) {
+                var methods = ['render', 'findDOMNode'];
+                for (var i = 0; i < methods.length; i++){
+                    var method = methods[i];
+                    if (!React[method] && ReactDOM[method]){
+                        React[method] = ReactDOM[method].bind(ReactDOM);
+                    }
                 }
             }
-
-            return {};
-        }
-    })(typeof window !== 'undefined' ? window :
-        (typeof module !== 'undefined' && typeof module.exports !== 'undefined' ? module.exports :
-            (typeof global !== 'undefined' ? global : {})));
-}).apply(null, (function () {
-    // 一个炒鸡简单的同步版本的requirejs有木有，就是为reactjs而写的：
-    var definedModules = {};
-
-    var require = function (depends, callback) {
-        var resolved = [];
-        for (var i = 0; i < depends.length; i++){
-            resolved = definedModules[depends[i]];
-        }
-
-        return callback.apply(null, resolved);
-    };
-
-    var define = function (module, depends, callback) {
-        if (typeof module !== 'string'){
-            callback = depends;
-            depends = module;
-            module = null;
-        }
-
-        var definedModule = require(depends, callback);
-        if (module){
-            definedModules[module] = definedModule;
-        }
-
-        return definedModule;
-    };
-
-    return [require, define];
-})());
+        })(g.React, g.ReactDOM);
+    })(typeof window !== 'undefined' ? window : {});
+}).call(null); // 故意地，让require和define都没有，这样子react就会乖乖地定义到了window对象上了 -- 我们就是要这样.

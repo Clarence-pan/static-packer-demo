@@ -248,15 +248,11 @@ gulp.task('clean', function () {
     ]);
 });
 
-// 默认启动的任务
-gulp.task('default', function (done) {
-    return runSequence('build', done);
-});
 
 
 // 重新构建
 gulp.task('rebuild', function (done) {
-    return runSequence('clean', 'default', done);
+    return runSequence('clean', 'build', done);
 });
 
 // 引入lib的构建配置
@@ -270,6 +266,11 @@ gulp.task('build-all', function(done){
 // 重新构建
 gulp.task('rebuild-all', function (done) {
     return runSequence(['rebuild', 'rebuild-lib'], done);
+});
+
+// 默认启动的任务
+gulp.task('default', function (done) {
+    return runSequence('build-all', done);
 });
 
 function dd() {
