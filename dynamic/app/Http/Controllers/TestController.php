@@ -32,7 +32,7 @@ class TestController extends Controller
         return $this->view()->with(get_defined_vars());
     }
 
-    public function preloadedReact()
+    public function loadReactViaRequirejs()
     {
         return $this->view();
     }

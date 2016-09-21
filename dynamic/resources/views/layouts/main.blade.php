@@ -5,7 +5,6 @@
     'js' =>  [
         'lib/common.js',
         'common.js',
-        'lib/requirejs.js',
      ],
 ])
 

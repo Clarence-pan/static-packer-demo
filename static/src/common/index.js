@@ -1,6 +1,7 @@
 import $ from 'jquery';
 import amdRequire from './amd-require';
 import env from './env';
+import loadingGifImg from './loading.gif';
 
 var log = (function (...args) {
     if (typeof console !== 'undefined' && typeof console.log === 'function') {
@@ -30,7 +31,9 @@ var Common = {
     renderReactComponent: renderReactComponent,
     eachReverse: eachReverse,
     reportError: reportError,
-    alert: window.alert.bind(window),
+    alert: alert,
+    renderLoadingTo: renderLoadingTo,
+    appendLoadingTo: appendLoadingTo,
 };
 
 // 合并Common模块
@@ -276,4 +279,29 @@ function reportError(err)
     }
 
     alert(err);
+}
+
+function alert(message)
+{
+    return window.alert(message);
+}
+
+/**
+ * 在某个元素上渲染一个loading动画
+ * @param selector
+ * @returns {*|jQuery}
+ */
+function renderLoadingTo(selector)
+{
+    return appendLoadingTo($(selector).empty());
+}
+
+/**
+ * 追加一个loading动画
+ * @param selector
+ * @returns {*|JQuery}
+ */
+function appendLoadingTo(selector)
+{
+    return $('<img class="loading" src="' + loadingGifImg + '"/>').appendTo(selector);
 }

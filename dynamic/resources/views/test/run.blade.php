@@ -1,7 +1,7 @@
 @extends('layouts.main')
 
 @registerStatics([
-    'js' => ['lib/react.min.js']
+    'js' => ['lib/requirejs.js', 'lib/react.min.js']
 ])
 
 @section('content')
