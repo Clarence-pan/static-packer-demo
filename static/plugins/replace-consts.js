@@ -85,7 +85,7 @@ function replaceConsts(options) {
 
 function replaceConstsOfString(str, consts){
     return str.replace(/__[0-9a-zA-Z_]+__/g, function(x){
-        return ((x in consts) && (typeof consts[x] === 'string')) ? consts[x] : x;
+        return ((x in consts) && (consts.hasOwnProperty(x)) && (typeof consts[x] === 'string')) ? consts[x] : x;
     });
 }
 

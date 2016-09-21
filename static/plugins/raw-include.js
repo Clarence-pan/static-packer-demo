@@ -16,10 +16,16 @@ var PLUGIN_NAME = 'raw-include';
  */
 module.exports = function (options) {
     options = _.extend({
-        regex: /include\(\s*['"](.+?)['"]\s*\)/g, // include指令的正则表达式，要求第1个分组应该是文件名
+        // include指令的正则表达式，要求第1个分组应该是文件名
+        // 注意1：如果raw-include是在uglify/minify之后进行的，请保证源文件中的include语句不会被压缩，否则会无法识别而无法替换
+        //       -- 建议uglify的时候加上reserved参数：uglifyjs --reserved 'include' -o test-min.js test.js
+        // 注意2：默认的正则表达式比较弱 -- 如果注释中也有include语句则也会被匹配替换，所以建议先去注释再用raw-include
+        // 注意3: 匹配到的文件名必须是字面常量，不能含"+"等其他任何操作，不要有转义字符
+        regex: /\$include\(\s*['"](.+?)['"]\s*\)/g,
         basePath: '', // 基础路径
         paths: {}, // 路径映射表
         wrapIIFE: true, // 是否包裹一个IIFE语句以成为一个独立的表达式
+        recursive: false, // 是否递归处理
         // 如何解析文件路径
         resolveFilePath: function (fileName) {
             if (fileName in options.paths){
@@ -57,11 +63,19 @@ module.exports = function (options) {
 
         return Promise.all(fileNames.map(function (fileName) {
             //console.log(PLUGIN_NAME + ': resolve file contents of ' + fileName);
-            return options.resolveFileContent({
+            var resolving = options.resolveFileContent({
                 base: options.basePath,
                 name: fileName,
                 path: options.resolveFilePath(fileName)
             });
+
+            if (options.recursive){
+                return resolving.then(function(fileContent){
+                    return doDealFileContents(fileContent);
+                });
+            } else {
+                return resolving;
+            }
         })).then(function (fileContents) {
             //console.log(PLUGIN_NAME + ': replacing file contents of ' + fileNames);
 
