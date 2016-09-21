@@ -23,7 +23,7 @@ function SimpleFileCache(options)
     this.options = options;
     this.data = options.initialData || {};
 
-    console.log("Cache created at " + this.options.file);
+    //console.log("Cache created at " + this.options.file);
 
     if (options.autoload){
         this.load();

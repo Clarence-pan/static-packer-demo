@@ -6,6 +6,7 @@ import prompt from './prompt';
 console.log('jQuery: ', $);
 console.log('_: ', _);
 console.log('common: ', common);
+console.log('common.env: ' + JSON.stringify(common.env));
 console.log('prompt: ', prompt);
 
 

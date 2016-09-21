@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import amdRequire from './amd-require';
+import env from './env';
 
 var log = (function (...args) {
     if (typeof console !== 'undefined' && typeof console.log === 'function') {
@@ -16,6 +17,7 @@ var log = (function (...args) {
 })();
 
 var Common = {
+    env: env,
     log: log,
     dir: dir,
     extend: extend,

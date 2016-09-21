@@ -1,6 +1,7 @@
 // 加载process.env
-require('dotenv').load();
+require('dotenv').load() || (console.error('Abort due to failed to load .env'), process.exit(1));
 
+// 加载库模块
 var gulp = require('gulp');
 var runSequence = require('run-sequence');
 var minify = require('gulp-minify');
@@ -18,11 +19,13 @@ var unique = require('array-unique');
 var fs = require('fs');
 var Promise = require('promise');
 
+// 加载自定义模块
 var webpackIndividuals = require('./plugins/webpack-individuals');
 var staticsHashes = require('./plugins/statics-hashes');
 var optimize = require('./plugins/dependency-optimize');
 var replaceConsts = require('./plugins/replace-consts');
-var SimpleFileCache = require('./plugins/simple-file-cache.js');
+var SimpleFileCache = require('./plugins/simple-file-cache');
+var sourceConsts = require('./plugins/source-consts');
 
 
 // 静态资源的hash表
@@ -79,9 +82,7 @@ gulp.task('build-src-webpack', function () {
         .pipe(replaceConsts({
             only: /\.js$/,
             extraConsts: function(){
-                return {
-                    __DEBUG_REACT__: JSON.stringify(process.env.DEBUG_REACT)
-                };
+                return sourceConsts;
             }
         }))
         .pipe(gulp.dest(DIST_DIR))
