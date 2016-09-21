@@ -11,10 +11,10 @@ class StaticsController extends Controller
     public function doGetIndex()
     {
         echo "<pre>";
-        print_r(app()->statics->getStaticsMap());
+        print_r(app()->statics->getManifestData());
     }
 
-    public function doPostUpdate(Request $request)
+    public function doPostUpdateManifest(Request $request)
     {
         $apiKey = env('UPDATE_STATICS_MAP_API_KEY');
         if ($apiKey !== $request->header('x-api-key')){
@@ -34,7 +34,7 @@ class StaticsController extends Controller
                 throw new \InvalidArgumentException("Invalid format of request data!");
             }
 
-            app()->statics->updateStaticsMap($data);
+            app()->statics->updateManifestData($data);
 
             return response()->json([
                 'success' => true,

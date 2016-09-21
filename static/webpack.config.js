@@ -49,7 +49,7 @@ module.exports = {
             //'jquery': path.resolve(public_dir, 'lib/jquery.js'),
             //'underscore': path.resolve(public_dir, 'lib/underscore.js'),
         },
-        //extensions: ["", ".webpack.js", ".web.js", ".ts", ".tsx", ".js", ".jsx"]
+        extensions: ["", ".webpack.js", ".web.js", ".ts", ".tsx", ".js", ".jsx"]
     },
     // 2. 通过externals导入外部的全局变量：
     externals: {
@@ -74,16 +74,17 @@ module.exports = {
             {test: /\.js$/, loader: "source-map-loader"},
         ],
         loaders: [
-            { test: /\.(js|ts)$/, loader: 'babel', },
-            { test: /\.jsx$/, loader: 'babel?presets=react', },
-            { test: /\.tsx$/, loader: 'ts-loader', },
-            { test: /\.jade$/, loader: 'jade', },
-            { test: /\.json$/, loader: 'json', },
-            { test: /\.yaml$/, loader: 'json!yaml', },
-            { test: /\.png$/, loader: 'url-loader?mimetype=image/png', },
-            { test: /\.jpg$/, loader: 'url-loader?mimetype=image/jpg', },
-            { test: /\.css$/, loader: 'style!css', },
-            { test: /\.less$/, loader: 'style!css!less', },
+            { test: /\.(js|ts)$/, loader: 'babel' },
+            { test: /\.jsx$/, loader: 'babel?presets=react' },
+            { test: /\.tsx$/, loader: 'ts-loader' },
+            { test: /\.jade$/, loader: 'jade' },
+            { test: /\.json$/, loader: 'json' },
+            { test: /\.yaml$/, loader: 'json!yaml' },
+            { test: /\.png$/, loader: 'url-loader?mimetype=image/png' },
+            { test: /\.jpg$/, loader: 'url-loader?mimetype=image/jpg' },
+            { test: /\.gif$/, loader: 'url-loader?mimetype=image/gif' },
+            { test: /\.css$/, loader: 'style!css' },
+            { test: /\.less$/, loader: 'style!css!less' },
         ]
     },
     plugins: [

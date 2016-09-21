@@ -6,6 +6,7 @@ import prompt from './prompt';
 console.log('jQuery: ', $);
 console.log('_: ', _);
 console.log('common: ', common);
+console.log('common.env: ' + JSON.stringify(common.env));
 console.log('prompt: ', prompt);
 
 
@@ -25,4 +26,21 @@ $("<div><a href='javascript:;'>Click here!</a></div>").appendTo('body').on('clic
         dialog.show("This dialog is loaded via AMD style require!");
     });
 });
+
+
+$('<div><a href="javascript:;">Show message-with-less</a><div class="message"></div></div>')
+    .appendTo('body')
+    .on('click', 'a', function(){
+        var $btn = $(this);
+        console.log('You clicked: [' + $btn.text() + ']');
+        common.initReact()
+            .then(function(){
+                return common.amdRequire(['components/message-with-less']);
+            })
+            .then(function(modules){
+                var [Message] = modules;
+                console.log("Message: %o", Message);
+                common.renderReactComponent(Message).to($btn.siblings('.message'));
+            });
+    });
 

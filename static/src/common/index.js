@@ -1,9 +1,12 @@
+import $ from 'jquery';
 import amdRequire from './amd-require';
+import env from './env';
+import loadingGifImg from './loading.gif';
 
 var log = (function (...args) {
     if (typeof console !== 'undefined' && typeof console.log === 'function') {
         // 很奇怪，IE8上虽然支持console.log但是不支持bind
-        if (typeof console.log.bind === 'function'){
+        if (typeof console.log.bind === 'function') {
             return console.log.bind(console);
         } else {
             return console.log(...args);
@@ -14,31 +17,34 @@ var log = (function (...args) {
     }
 })();
 
+
 var Common = {
-    extend: extend,
-    resolveSelfScriptSrcUrl: resolveSelfScriptSrcUrl,
-    resolveSelfScriptShortName: resolveSelfScriptShortName,
-    urlify: urlify,
+    env: env,
     log: log,
-    dir: dir
+    dir: dir,
+    extend: extend,
+    urlify: urlify,
+    parseQueryParamsOfUrl: parseQueryParamsOfUrl,
+    parseQueryString: parseQueryString,
+    parsePathOfUrl: parsePathOfUrl,
+    initReact: initReact,
+    renderReactComponent: renderReactComponent,
+    eachReverse: eachReverse,
+    reportError: reportError,
+    alert: alert,
+    renderLoadingTo: renderLoadingTo,
+    appendLoadingTo: appendLoadingTo,
 };
 
 // 合并Common模块
-Common = Common.extend(Common, amdRequire);
+export default Common = Common.extend(Common, amdRequire);
 
-// 导出Common变量，以便共用
+
+// 导出Common变量到window中，以便共用
 if (typeof window !== 'undefined') {
     window.Common = Common;
 }
 
-console.log("Self script src URL: %o", resolveSelfScriptSrcUrl());
-console.log("Self script short name: %o", resolveSelfScriptShortName());
-console.log("Self script params: %o", resolveSelfScriptSrcUrlParams());
-
-var params = resolveSelfScriptSrcUrlParams();
-if (params && (params.amd === 'on' || params.amd === 'true' || params.amd === 'yes')){
-    Common.initAmd();
-}
 
 ////////////////////////////////////////////////////////////////////////
 // 函数定义：
@@ -61,43 +67,6 @@ function extend(receiver) {
     }
 
     return receiver;
-}
-
-/**
- * 解析当前脚本的源路径
- * @returns string
- */
-function resolveSelfScriptSrcUrl() {
-    console.log("document.ready: " + document.readyState);
-
-    var selfScript = null;
-    var scripts = document.getElementsByTagName('script');
-     if (document.currentScript){
-        selfScript = document.currentScript;
-    } else if (document.readyState === 'loading'){
-        selfScript = scripts[scripts.length - 1];
-    } else {
-        eachReverse(scripts, function (script) {
-            if (script.readyState === 'interactive') {
-                selfScript = script;
-                return false;
-            }
-        });
-    }
-
-    if (!selfScript){
-        throw new Error("Cannot resolve self script!");
-    }
-
-    return (selfScript.src || '') + '';
-}
-
-/**
- * 解析当前脚本源路径中的参数
- * @returns {{}}
- */
-function resolveSelfScriptSrcUrlParams(){
-    return parseQueryParamsOfUrl(resolveSelfScriptSrcUrl());
 }
 
 /**
@@ -173,29 +142,6 @@ function parsePathOfUrl(url) {
     return url;
 }
 
-/**
- * 解析当前脚本的短名称 -- 干掉域名、路径前缀和后缀名
- * 如本文件会被解析为 "common"
- */
-function resolveSelfScriptShortName() {
-    var src = resolveSelfScriptSrcUrl();
-
-    // 解析路径
-    src = parsePathOfUrl(src);
-
-    // 干掉前导的'/'
-    src = src.replace(/^\/+/, '');
-
-    // 干掉dist文件夹
-    src = src.replace(/^(dist\/)/, '');
-
-    // 干掉后面的hash和后缀名
-    var shotName = src.replace(/_[0-9a-zA-Z]+\.js$/, '');
-
-    log("resolved shortname: " + shotName);
-
-    return shotName;
-}
 
 /**
  * Helper function for iterating over an array backwards. If the func
@@ -239,6 +185,123 @@ function dir(obj, onlyOwned) {
 }
 
 
-function urlify(str){
+function urlify(str) {
     return (str + '').replace(/\\/g, '/');
+}
+
+/**
+ * 初始化React
+ * @param callback
+ * @returns {Promise}
+ */
+function initReact(callback) {
+    var promise;
+    if (window.React) {
+        promise = Promise.resolve(window.React);
+    } else {
+        promise = new Promise(function (resolve, reject) {
+            Common.amdRequire(['react'], function (React) {
+                console.log("[amdRequire] React: %o", React);
+                resolve(React);
+            });
+        });
+    }
+
+
+    if (typeof callback === 'function') {
+        promise = promise.then(callback);
+    }
+
+    return promise;
+}
+
+/**
+ * 一个渲染React组件的快捷方法 -- 支持jquery
+ * 如：renderReactComponent(App, {props...}).to('#id')
+ * @param componentClass
+ * @param props
+ * @param children
+ * @returns {{to: function(target)}}
+ */
+function renderReactComponent(componentClass, props, children) {
+    var createElemArgs = arguments;
+    return {
+        to: function (target) {
+            var err;
+            if (typeof target === 'string') {
+                target = $(target);
+            }
+
+            if (target && target.jquery) {
+                target = target[0];
+            }
+
+            if (!target) {
+                err = new Error("Warning: Empty target to render!");
+                err.type = "empty-target";
+                console.log(err);
+                return Promise.reject(err);
+            }
+
+            return initReact()
+                .then(function (React) {
+                    var component = React.createElement.apply(React, createElemArgs);
+                    return React.render(component, target);
+                });
+        }
+    };
+}
+
+/**
+ * 报告一个错误
+ */
+function reportError(err)
+{
+    if (typeof console !== 'undefined'){
+        if (console.error){
+            console.error(err);
+        } else if (console.log) {
+            console.log(err);
+        } else {
+            // console log & error not exists? are you kidding me!
+        }
+    }
+
+    var message = "Unknown error";
+    if (err){
+        if (typeof err === 'string'){
+            message = err;
+        } else if (err.message){
+            message = err.message;
+        } else {
+            message = err + '';
+        }
+    }
+
+    alert(err);
+}
+
+function alert(message)
+{
+    return window.alert(message);
+}
+
+/**
+ * 在某个元素上渲染一个loading动画
+ * @param selector
+ * @returns {*|jQuery}
+ */
+function renderLoadingTo(selector)
+{
+    return appendLoadingTo($(selector).empty());
+}
+
+/**
+ * 追加一个loading动画
+ * @param selector
+ * @returns {*|JQuery}
+ */
+function appendLoadingTo(selector)
+{
+    return $('<img class="loading" src="' + loadingGifImg + '"/>').appendTo(selector);
 }

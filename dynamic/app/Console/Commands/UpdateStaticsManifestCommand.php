@@ -6,12 +6,12 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UpdateStaticsMapCommand extends Command
+class UpdateStaticsManifestCommand extends Command
 {
     protected function configure()
     {
-        $this->setName('update-statics-map')
-            ->addArgument('input', InputArgument::OPTIONAL, 'Input of the map(in JSON format)', '-');
+        $this->setName('update-statics-manifest')
+            ->addArgument('input', InputArgument::OPTIONAL, 'Input of the manifest(in JSON format)', '-');
     }
 
     public function handle()
@@ -43,7 +43,7 @@ class UpdateStaticsMapCommand extends Command
                 return 3;
             }
 
-            app()->statics->updateStaticsMap($inputData);
+            app()->statics->updateManifestData($inputData);
 
             $this->info('Updated.', OutputInterface::VERBOSITY_VERBOSE);
             return 0;

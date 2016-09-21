@@ -1,9 +1,9 @@
 <?php
 
 $staticsManager = app()->statics;
-$shimsForIe8ScriptUrl = $staticsManager->urlOfFile('lib/shims-for-ie8-debug.js?v20');
-$promisePolyfillScriptUrl = $staticsManager->urlOfFile('lib/promise-polyfill.js?v20');
-$localJQueryScriptUrl = $staticsManager->urlOfFile('lib/jquery.min.js?v20');
+$shimsForIe8ScriptUrl = $staticsManager->urlOfFile('lib/shims-for-ie8-debug.js');
+$promisePolyfillScriptUrl = $staticsManager->urlOfFile('lib/promise-polyfill.js');
+$localJQueryScriptUrl = $staticsManager->urlOfFile('lib/jquery.min.js');
 
 ?>
 {{-- 有了jQuery还是很方便的，都引入一下吧： --}}

@@ -13,6 +13,8 @@
 
 $app->get('/', 'HomeController@index');
 
+$app->get('/test', 'TestController@index');
+$app->get('/test/{action}', 'TestController@runAction');
 
 $app->register(Clarence\LumenDefaultRoutes\DefaultRouteProvider::class);
 
