@@ -1,19 +1,15 @@
-var baseUrl = (window.STATIC_SERVER || 'js') + '/dist';
+var serverBase = (window.STATIC_SERVER || 'statics');
+var baseUrl = serverBase + '/dist';
 var config = {
     baseUrl: baseUrl,
-    paths: {
-        'jquery': '../lib/jquery',
-        'underscore': '../lib/underscore',
-        'react': __DEBUG_REACT__ ? '../lib/react' : '../lib/react.min',
-        'react-dom': __DEBUG_REACT__ ? '../lib/react' : '../lib/react.min',
-    },
+    paths: {},
     shim: {
-        //'react': {
-        //    'exports': 'React'
-        //},
-        //'react-dom': {
-        //    'exports': 'ReactDOM'
-        //}
+        'react': {
+            'exports': 'React'
+        },
+        'react-dom': {
+            'exports': 'ReactDOM'
+        }
     }
 };
 
@@ -28,35 +24,54 @@ function loadRequireJsConfig() {
 
     return new Promise(function (resolve, reject) {
         $.ajax({
-            type: 'GET',
-            url: baseUrl + '/manifest.js',
-            dataType: 'jsonp',
-            jsonp: false,
-            jsonpCallback: callbackName
-        })
+                type: 'GET',
+                url: serverBase + '/manifest.js',
+                dataType: 'jsonp',
+                jsonp: false,
+                jsonpCallback: callbackName
+            })
             .then(function (response) {
                 console.log('loaded requirejs config: %o', response);
                 var data = response;
-                if (typeof(response) !== 'object'){
+                if (typeof(response) !== 'object') {
                     try {
                         data = JSON.parse(response);
-                        if (!data){
+                        if (!data) {
                             reject(new Error("Empty response!"));
                             return;
                         }
-                    } catch (e){
+                    } catch (e) {
                         reject(e);
                         return;
                     }
                 }
 
                 var jsExtRegex = /\.js$/;
+                var libPrefixRegex = /^lib\//;
+                var miniFileSuffix = /[.-]min$/;
 
-                for (var file in data){
-                    if (data.hasOwnProperty(file) && jsExtRegex.test(file)){
-                        config.paths[file.replace(jsExtRegex, '')] = data[file].replace(jsExtRegex, '');
+                // data: file => hash
+                for (var file in data) {
+                    if (data.hasOwnProperty(file) && jsExtRegex.test(file)) {
+                        var hash = data[file];
+
+                        // 去掉js的前缀
+                        file = file.replace(jsExtRegex, '');
+
+                        // 加上hash
+                        var realFilePath = file + '_' + hash;
+
+                        // 注意： lib目录是在上一级
+                        if (libPrefixRegex.test(file)){
+                            config.paths[file] = '../' + realFilePath;
+                            config.paths[file.replace(libPrefixRegex, '')] = '../' + realFilePath;
+                        } else {
+                            config.paths[file] = realFilePath;
+                        }
                     }
                 }
+
+                console.log('Final requirejs config: %o ', config);
 
                 resolve(config);
             }, function (err) {

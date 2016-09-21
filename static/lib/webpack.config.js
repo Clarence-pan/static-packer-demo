@@ -21,7 +21,7 @@ module.exports = {
     // 1. 使用alias映射到本地文件 -- 最终可以通过CommonsChunkPlugin合并到vendors.js中
     resolve: {
         alias: {
-            'jquery': path.resolve(node_modules_dir, 'jquery/jquery.js'),
+            //'jquery': path.resolve(node_modules_dir, 'jquery/jquery.js'),
             //'common': path.resolve(src_dir, 'common/common.js'),
             //'underscore': path.resolve(public_dir, 'lib/underscore.js'),
         },
@@ -35,23 +35,24 @@ module.exports = {
     },
     output: {
         path: dist_dir,
-        filename: '[name].js'
+        filename: '[name]_[hash].js'
     },
     module: {
         preLoaders: [
             {test: /\.js$/, loader: "source-map-loader"},
         ],
         loaders: [
-            { test: /\.(js|ts)$/, loader: 'babel', },
-            { test: /\.jsx$/, loader: 'babel?presets=react', },
-            { test: /\.tsx$/, loader: 'ts-loader', },
-            { test: /\.jade$/, loader: 'jade', },
-            { test: /\.json$/, loader: 'json', },
-            { test: /\.yaml$/, loader: 'json!yaml', },
-            { test: /\.png$/, loader: 'url-loader?mimetype=image/png', },
-            { test: /\.jpg$/, loader: 'url-loader?mimetype=image/jpg', },
-            { test: /\.css$/, loader: 'style!css', },
-            { test: /\.less$/, loader: 'style!css!less', },
+            { test: /\.(js|ts)$/, loader: 'babel' },
+            { test: /\.jsx$/, loader: 'babel?presets=react' },
+            { test: /\.tsx$/, loader: 'ts-loader' },
+            { test: /\.jade$/, loader: 'jade' },
+            { test: /\.json$/, loader: 'json' },
+            { test: /\.yaml$/, loader: 'json!yaml' },
+            { test: /\.png$/, loader: 'url-loader?mimetype=image/png' },
+            { test: /\.jpg$/, loader: 'url-loader?mimetype=image/jpg' },
+            { test: /\.gif$/, loader: 'url-loader?mimetype=image/gif' },
+            { test: /\.css$/, loader: 'style!css' },
+            { test: /\.less$/, loader: 'style!css!less' },
         ]
     },
     plugins: [

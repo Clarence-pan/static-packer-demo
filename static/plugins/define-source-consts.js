@@ -1,5 +1,5 @@
 // 定义源文件中的常量
-var browserEnv = require('./browser-env');
+var browserEnv = require('./define-browser-env');
 
 module.exports = {
     __DEBUG_REACT__: JSON.stringify(process.env.DEBUG_REACT),

@@ -27,7 +27,9 @@ var Common = {
     parsePathOfUrl: parsePathOfUrl,
     initReact: initReact,
     renderReactComponent: renderReactComponent,
-    eachReverse: eachReverse
+    eachReverse: eachReverse,
+    reportError: reportError,
+    alert: window.alert.bind(window),
 };
 
 // 合并Common模块
@@ -244,4 +246,33 @@ function renderReactComponent(componentClass, props, children) {
                 });
         }
     };
+}
+
+/**
+ * 报告一个错误
+ */
+function reportError(err)
+{
+    if (typeof console !== 'undefined'){
+        if (console.error){
+            console.error(err);
+        } else if (console.log) {
+            console.log(err);
+        } else {
+            // console log & error not exists? are you kidding me!
+        }
+    }
+
+    var message = "Unknown error";
+    if (err){
+        if (typeof err === 'string'){
+            message = err;
+        } else if (err.message){
+            message = err.message;
+        } else {
+            message = err + '';
+        }
+    }
+
+    alert(err);
 }

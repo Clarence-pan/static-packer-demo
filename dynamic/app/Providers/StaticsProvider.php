@@ -38,7 +38,7 @@ class StaticsProvider extends ServiceProvider
             return "<?php echo app()->statics->loadRegisteredStatics$expression; ?>";
         });
 
-        // @staticUrlOfFile($type, $file)
+        // @staticUrlOfFile($file)
         $blade->directive('staticUrlOfFile', function ($expression) {
             return "<?php echo app()->statics->urlOfFile$expression; ?>";
         });
@@ -47,7 +47,7 @@ class StaticsProvider extends ServiceProvider
         $blade->directive('importScripts', function ($expression) {
             return "<?php echo app()->statics->importScripts$expression; ?>";
         });
-        
+
         // @importStyles($styles)
         $blade->directive('importStyles', function ($expression) {
             return "<?php echo app()->statics->importStyles$expression; ?>";
@@ -55,24 +55,38 @@ class StaticsProvider extends ServiceProvider
     }
 
     protected $resources = [];
-    protected $server = null;
-    protected $staticsMap = null;
-    protected $staticsMapFile = null;
+    protected $server;
+    protected $basePath;
+    protected $libPath;
+    protected $debug;
+    protected $manifestData;
+    protected $manifestFile;
+    protected $version;
 
     /**
      * 加载配置
      */
-    protected function loadConfigure()
+    public function loadConfigure($version = null)
     {
-        $this->app->configure('statics');
+        // 对于lumen框架，需要先加载配置...
+        if (method_exists($this->app, 'configure')) {
+            $this->app->configure('statics');
+        }
+
         $config = $this->app['config'];
-        $this->server = $config['statics.server'];
-        $this->staticsMapFile = $config['statics.map-file'];
-        $this->staticsMap = (array)@include($this->staticsMapFile);
+        $staticConfigs = $config['statics'];
+        $this->server = $staticConfigs['server'];
+        $this->basePath = $staticConfigs['basePath'];
+        $this->libPath = $staticConfigs['libPath'];
+        $this->debug = $staticConfigs['debug'];
+        $this->version = $version ? $staticConfigs['version'] : "0";
+        $this->manifestFile = str_replace('{version}', $this->version, $staticConfigs['manifest']);
+        $this->manifestData = (array)@include($this->manifestFile);
     }
 
     /**
      * 注册资源
+     *
      * @param array $resources
      */
     public function registerStatics(array $resources)
@@ -88,6 +102,7 @@ class StaticsProvider extends ServiceProvider
 
     /**
      * 根据视图名称注册默认的资源
+     *
      * @param $viewName
      */
     public function registerDefaultStatics($viewName)
@@ -101,6 +116,7 @@ class StaticsProvider extends ServiceProvider
 
     /**
      * 根据类型加载已经注册过的静态资源
+     *
      * @param $type
      * @return string
      */
@@ -110,13 +126,13 @@ class StaticsProvider extends ServiceProvider
         switch ($type) {
             case 'css':
                 foreach ($this->resources[$type] as $resource) {
-                    $url = $this->urlOfFile($type, $resource);
+                    $url = $this->urlOfFile($resource);
                     $output[] = "<link rel=\"stylesheet\" href=\"{$url}\" >";
                 }
                 break;
             case 'js':
                 foreach ($this->resources[$type] as $resource) {
-                    $url = $this->urlOfFile($type, $resource);
+                    $url = $this->urlOfFile($resource);
                     $output[] = "<script src=\"{$url}\" ></script>";
                 }
                 break;
@@ -128,6 +144,7 @@ class StaticsProvider extends ServiceProvider
 
     /**
      * 通过script标签导入脚本资源
+     *
      * @param $scripts
      * @return string
      */
@@ -137,7 +154,7 @@ class StaticsProvider extends ServiceProvider
 
         $output = [];
         foreach ($scripts as $resource) {
-            $url = $this->urlOfFile('js', $resource);
+            $url = $this->urlOfFile($resource);
             $output[] = "<script src=\"{$url}\" ></script>";
         }
 
@@ -146,6 +163,7 @@ class StaticsProvider extends ServiceProvider
 
     /**
      * 通过link标签导入样式资源
+     *
      * @param $styles
      * @return string
      */
@@ -155,7 +173,7 @@ class StaticsProvider extends ServiceProvider
 
         $output = [];
         foreach ($styles as $resource) {
-            $url = $this->urlOfFile('css', $resource);
+            $url = $this->urlOfFile($resource);
             $output[] = "<link rel=\"stylesheet\" href=\"{$url}\" >";
         }
 
@@ -164,67 +182,78 @@ class StaticsProvider extends ServiceProvider
 
     /**
      * 获取一个文件的URL
-     * @param $type
+     *
      * @param $file
      * @return string
      */
-    public function urlOfFile($type, $file=null)
+    public function urlOfFile($file)
     {
-        if ($file === null){
-            list($type, $file) = [null, $type];
-        }
+        // 干掉前导的斜杠，省得有人不小心多写了个斜杠导致不匹配
+        $file = ltrim($file, "\\/");
 
         // hash映射查询的时候需要干掉后面的查询字符串
         $queryPos = strpos($file, '?');
         $filePath = ($queryPos === false ? $file : substr($file, 0, $queryPos));
 
-        // 如果没有传类型，则自动根据后缀名识别类型
-        if (!$type){
-            $extName = strrchr($filePath, '.'); // 文件扩展名
-            $type = strtolower(substr($extName, 1));
+        // 调试模式下如果有未压缩版本的文件，则用未压缩版本的
+        if ($this->debug) {
+            $originalFilePath = preg_replace('/[.-]min/', '', $filePath);
+            if (!empty($this->manifestData[$originalFilePath])) {
+                $filePath = $originalFilePath;
+            }
         }
 
-        // 使用@抑制错误更简洁快速
-        $hash = @$this->staticsMap[$type][$filePath] ?: '';
+        // 获取hash -- 使用@抑制错误更简洁快速
+        $hash = @$this->manifestData[$filePath] ?: '';
 
         // 如果没有找到hash，则默认用源文件
         if (empty($hash)) {
             return $this->server . '/' . $file;
-        } else {
-            // 否则，追加hash到文件路径中去
-            $extName = isset($extName) ? $extName : strrchr($filePath, '.'); // 文件扩展名
-            return implode([
-                $this->server, // http://xxxxx.xx
-                '/dist/' . substr($file, 0, strlen($filePath) - strlen($extName)) . '_' . $hash . $extName, // file path
-                ($queryPos === false ? '' : substr($file, $queryPos)), // query string
-            ]);
         }
+
+        // 获取文件扩展名
+        $extName = strrchr($filePath, '.');
+
+        // 先干掉文件扩展名方便做一些处理
+        $urlPath = substr($file, 0, strlen($filePath) - strlen($extName));
+
+        // 如果是lib打头的，则替换成lib的路径
+        if (strlen($urlPath) > 4 && strncmp($urlPath, 'lib/', 4) === 0) {
+            $urlPath = $this->libPath . substr($urlPath, 3);
+        } else {
+            $urlPath = $this->basePath . '/' . $urlPath;
+        }
+
+        // 最后加上hash和扩展名
+        $urlPath = $urlPath . '_' . $hash . $extName;
+
+        return implode([
+            $this->server, // http://xxxxx.xx
+            $urlPath, // path of url
+            ($queryPos === false ? '' : substr($file, $queryPos)), // query string
+        ]);
     }
 
     /**
      * 获取静态资源的映射表
+     *
      * @return array
      */
-    public function getStaticsMap()
+    public function getManifestData()
     {
-        return $this->staticsMap;
+        return $this->manifestData;
     }
 
     /**
      * 更新静态映射文件
      *
-     * @param array $maps
+     * @param array $mergeData
      * @return int|false
      */
-    public function updateStaticsMap(array $maps)
+    public function updateManifestData(array $mergeData)
     {
-        $mapData = $this->staticsMap;
-
-        foreach ($maps as $type => $data) {
-            $mapData[$type] = array_merge((array)@$mapData[$type], (array)$data);
-        }
-
-        return self::safelyPutPhpFileContents($this->staticsMapFile, "<?php\nreturn " . var_export($mapData, true) . ";\n");
+        $newManifestData = array_merge($this->manifestData, $mergeData);
+        return self::safelyPutPhpFileContents($this->manifestFile, "<?php\nreturn " . var_export($newManifestData, true) . ";\n");
     }
 
     /**

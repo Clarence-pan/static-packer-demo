@@ -79,3 +79,11 @@ TODOs
 
 1. webpack
 2. fis3
+
+
+FAQ
+=====
+
+1. 通过`import something 'app/something'`的方式导入一个模块的时候，为什么有的时候点进去发现文件跟实际的文件不一样？
+--------------
+这个是IDE的缓存机制搞的鬼，同步一下/刷新下缓存（如WebStorm里面是叫"Synchronize xxxx"）就好了。

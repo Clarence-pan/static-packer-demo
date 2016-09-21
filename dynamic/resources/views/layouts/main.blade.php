@@ -3,9 +3,9 @@
 @registerStatics([
     'css' => ['common.css'],
     'js' =>  [
-        'lib/common.js?v8',
-        'common.js?amd=on',
-        'lib/requirejs.js?v8',
+        'lib/common.js',
+        'common.js',
+        'lib/requirejs.js',
      ],
 ])
 

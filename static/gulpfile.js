@@ -20,16 +20,13 @@ var fs = require('fs');
 var Promise = require('promise');
 
 // 加载自定义模块
-var webpackIndividuals = require('./plugins/webpack-individuals');
-var staticsHashes = require('./plugins/statics-hashes');
-var optimize = require('./plugins/dependency-optimize');
-var replaceConsts = require('./plugins/replace-consts');
+var webpackIndividuals = require('./plugins/gulp-webpack-individuals');
+var staticsManifests = require('./plugins/gulp-statics-manifests');
+var optimize = require('./plugins/gulp-dependency-optimize');
+var replaceConsts = require('./plugins/gulp-replace-consts');
+
+var sourceConsts = require('./plugins/define-source-consts');
 var SimpleFileCache = require('./plugins/simple-file-cache');
-var sourceConsts = require('./plugins/source-consts');
-
-
-// 静态资源的hash表
-var staticsMapTableCache = {};
 
 // 文件缓存
 var cache = SimpleFileCache.instance();
@@ -39,6 +36,10 @@ var SRC_DIR = './src';
 
 // 构建完成的目录
 var DIST_DIR = './public/dist';
+
+// 维护文件的目录
+var MANIFEST_DIR = './public';
+staticsManifests.load({fromDir: MANIFEST_DIR});
 
 var sourceScripts = [
     './src/**/index.js',
@@ -65,7 +66,7 @@ gulp.task('build-src-webpack', function () {
         }))
         .pipe(optimize({
             dest: function (file) {
-                return glob(path.join(file.cwd, DIST_DIR, path.dirname(file.relativePath) + '*.js'), {sync: true});
+                return [path.resolve(DIST_DIR, file.named + '_' + staticsManifests.get(file.named + '.js') + '.js')];
             },
             depends: function (file) {
                 var depends = cache.get("webpack_depends_of_" + file.path);
@@ -86,16 +87,22 @@ gulp.task('build-src-webpack', function () {
             }
         }))
         .pipe(gulp.dest(DIST_DIR))
-        .pipe(staticsHashes.gather({to: staticsMapTableCache}));
+        .pipe(staticsManifests.gather());
 });
 
 // css单独构建
 gulp.task('build-css-files', function () {
     return gulp
         .src(sourceCssFiles, {base: SRC_DIR})
+        .pipe(named(function (file) {
+            file.baseDir = path.resolve(file.base);
+            file.destPath = path.resolve(path.dirname(file.path) + path.extname(file.path));
+            file.destName = path.relative(file.baseDir, file.destPath).replace(/\.\w+$/, '');
+            return file.destName;
+        }))
         .pipe(optimize({
             dest: function (file) {
-                return glob(path.join(file.cwd, DIST_DIR, path.dirname(file.relativePath) + '*.css'), {sync: true});
+                return [path.resolve(DIST_DIR, file.named + '_' + staticsManifests.get(file.named + '.css') + '.css')];
             },
             depends: function (file) {
                 return [file.path];
@@ -111,81 +118,14 @@ gulp.task('build-css-files', function () {
         }))
         .pipe(md5(20))
         .pipe(gulp.dest(DIST_DIR))
-        .pipe(staticsHashes.gather({to: staticsMapTableCache}));
+        .pipe(staticsManifests.gather());
 });
 
-// 构建完成后更新hash
-gulp.task('update-hashes', function (done) {
-    staticsHashes.update(staticsMapTableCache, null, function (error) {
+// 构建完成后保存manifest信息
+gulp.task('save-manifest', function (done) {
+    staticsManifests.save({destDir: MANIFEST_DIR}, function (error) {
         done(error);
     });
-});
-
-// 保存hash关系的
-gulp.task('save-manifest', function (done) {
-    var manifestFile = path.resolve(DIST_DIR, 'manifest.json');
-    var manifestData = {};
-
-    fs.readFile(manifestFile, 'utf8', function (err, data) {
-        if (err) {
-            // 忽略不存在的文件
-            if (err.code === 'ENOENT') {
-                data = '{}';
-            } else {
-                return done(err);
-            }
-        }
-
-        try {
-            manifestData = JSON.parse(data) || {};
-        } catch (e) {
-            console.log("Warning: failed to parse old manifest data. Empty object assumed.");
-        }
-
-        for (var type in staticsMapTableCache) {
-            if (!staticsMapTableCache.hasOwnProperty(type)) {
-                continue;
-            }
-
-            var files = staticsMapTableCache[type];
-            for (var file in files) {
-                if (!files.hasOwnProperty(file)) {
-                    continue;
-                }
-
-                (function (hash) {
-                    manifestData[file] = file.replace(/\.\w+$/, function (whole) {
-                        return '_' + hash + whole;
-                    });
-                })(files[file]);
-            }
-        }
-
-        manifestData = JSON.stringify(manifestData, null, ' ');
-
-        // 除了保存一份json的，顺便保存一份jsonp版本的，方便跨域查询
-        Promise.all([
-            new Promise(function (resolve, reject) {
-                fs.writeFile(path.resolve(DIST_DIR, 'manifest.json'), manifestData, 'utf8', callbackToPromise(resolve, reject));
-            }),
-            new Promise(function (resolve, reject) {
-                var manifestJsonpCode = 'window.manifestJsonpCallback && window.manifestJsonpCallback(' + manifestData + ');';
-                fs.writeFile(path.resolve(DIST_DIR, 'manifest.js'), manifestJsonpCode, 'utf8', callbackToPromise(resolve, reject));
-            })
-        ]).then(done.bind(null, null), done);
-
-        function callbackToPromise(resolve, reject) {
-            return function (err, data) {
-                if (err) {
-                    console.log(err);
-                    reject(err);
-                } else {
-                    resolve(data);
-                }
-            };
-        }
-    });
-
 });
 
 // 保存缓存的内容
@@ -199,7 +139,7 @@ gulp.task('save-caches', function (done) {
 gulp.task('build', function (done) {
     return runSequence(
         ['build-src-webpack', 'build-css-files'],
-        ['update-hashes', 'save-caches', 'save-manifest'],
+        ['save-caches', 'save-manifest'],
         done);
 });
 
@@ -214,7 +154,7 @@ gulp.task('watch', function () {
             console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
 
             // 清理缓存
-            staticsMapTableCache = {};
+            staticsManifests.reset();
             optimize.cleanCache({file: event.path});
 
             if (!buildTimer) {
