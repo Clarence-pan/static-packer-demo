@@ -73,6 +73,8 @@
     "requirejs": "^2.3.2",
     "stream-buffers": "^3.0.1",
     "underscore": "^1.8.3",
-    "react": "^15.3.2"
+    "react": "^15.3.2",
+    "through2": "~2.0.1",
+    "memory-fs": "~0.3.0"
   }
 }
