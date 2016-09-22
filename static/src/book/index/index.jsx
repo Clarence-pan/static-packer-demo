@@ -4,6 +4,10 @@ import common from 'common';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import detail from '../detail/index.tsx';
+
+console.log('Detail: %o', detail);
+
 $("<div class='message'>Hello from jsx: this is book/detail page!</div>").appendTo('body');
 
 common.log("Hello via common.log!");

@@ -188,7 +188,7 @@ gulp.task('lib-build-react-min', function(){
                 return sourceFiles;
             }
         }))
-        .pipe(uglifyInplace())
+        .pipe(uglifyInplace({mangle: {except: ['$include', 'require', 'define']}}))
         .pipe(rawInclude({
             paths: combine(['react', 'react-dom'], sourceFiles),
         }))

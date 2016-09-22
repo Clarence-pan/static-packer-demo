@@ -9,7 +9,7 @@ $("<div class='message'>Hello from ts: this is book/index page!</div>").appendTo
 
 common.log("Hello via common.log!");
 
-class App extends React.Component<any, any>{
+export default class App extends React.Component<any, any>{
     render(){
         return (
             <div>This is from React via tsx!</div>
