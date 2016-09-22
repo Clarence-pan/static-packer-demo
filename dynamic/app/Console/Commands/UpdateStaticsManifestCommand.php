@@ -56,10 +56,17 @@ class UpdateStaticsManifestCommand extends Command
     public static function readToEnd($file, $chunkSize = 4096)
     {
         $chunks = [];
+        $start = time();
+        $maxWaitTime = 10;
 
         while (!feof($file)) {
             $read = fread($file, $chunkSize);
             if ($read === false) {
+                break;
+            }
+
+            // avoid deadloop
+            if (time() - $start > $maxWaitTime){
                 break;
             }
 
