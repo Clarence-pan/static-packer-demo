@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/bin/bash -xe
 
 DEPLOY_TARGET="$1"
 RSYNC_OPTIONS="-avzC --delay-updates --exclude-from=.deploy_ignores"
@@ -11,7 +11,7 @@ fi;
 
 
 # Ensure working directory are here
-cd `dirname "$0""`
+cd `dirname "$0"`
 
 # If composer packages updated, then install it.
 composer_lock_update_time=`stat -c %Y composer.lock`;
