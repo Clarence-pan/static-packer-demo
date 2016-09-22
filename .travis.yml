@@ -36,3 +36,11 @@ script:
   - npm run build
   - npm run test
 
+after_script:
+  - cd "$PROJECT_BASE"
+  - cat dynamic/bootstrap/cache/*.php
+  - cat static/public/*.json
+  - cat static/public/*.js
+  - cat static/*.log
+
+

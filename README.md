@@ -1,3 +1,7 @@
+关于此项目 ![](https://travis-ci.org/Clarence-pan/static-packer-demo.svg)
+==========
+此项目是为了演示/测试/探索 PHP + NodeJs 的协作之道。
+
 目标：
 ======
 
