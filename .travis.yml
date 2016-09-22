@@ -2,7 +2,7 @@ branches:
   only:
   - master
 
-language: php node_js
+language: php
 
 sudo: false
 
