@@ -13,7 +13,7 @@ node_js:
   - "5.9"
 
 
-install:
+before_script:
   - PROJECT_BASE="`pwd`"
   - cd "$PROJECT_BASE/dynamic"
   - cp .env.example .env
