@@ -226,6 +226,7 @@ function notifyDynamicAboutManifests(manifests, options) {
                 timeout: options.timeout,
                 shell: true,
                 stdio: ['pipe', 'pipe', 'pipe'],
+				detached: true,
             }, function(error, stdout, stderr){
                 if (error !== null){
                     gutil.log("Finished update mainifest with error: ", error, " StdOut: ", stdout, " StdErr: ", stderr);
