@@ -221,9 +221,8 @@ function notifyDynamicAboutManifests(manifests, options) {
 
             gutil.log('> ' + cmd);
 
-            child_process.exec(cmd, {
+            var worker = child_process.exec(cmd, {
                 cwd: options.apiShellCwd,
-                input: JSON.stringify(manifests),
                 timeout: options.timeout
             }, function(error, stdout, stderr){
                 if (error !== null){
@@ -234,6 +233,8 @@ function notifyDynamicAboutManifests(manifests, options) {
                     return resolve(stdout);
                 }
             });
+
+            worker.stdin.end(JSON.stringify(manifests) + "\n");
         })
     } else if (options.apiType === 'http') {
         return new Promise(function(resolve, reject){
