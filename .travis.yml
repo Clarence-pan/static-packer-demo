@@ -30,6 +30,7 @@ before_script:
   - npm install
   - npm link typescript
   - ln -s `pwd`/src node_modules/app
+  - "$PROJECT_BASE/start-dev-servers" &
 
 script:
   - cd "$PROJECT_BASE/static"
