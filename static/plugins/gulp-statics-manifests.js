@@ -221,10 +221,11 @@ function notifyDynamicAboutManifests(manifests, options) {
 
             gutil.log('> ' + cmd);
 
-            child_process.exec(cmd, {
+            var apiCall = child_process.spawn(cmd, [], {
                 cwd: options.apiShellCwd,
-                input: JSON.stringify(manifests),
-                timeout: options.timeout
+                timeout: options.timeout,
+                shell: true,
+                stdio: ['pipe', 'pipe', 'pipe'],
             }, function(error, stdout, stderr){
                 if (error !== null){
                     gutil.log("Finished update mainifest with error: ", error, " StdOut: ", stdout, " StdErr: ", stderr);
@@ -234,7 +235,9 @@ function notifyDynamicAboutManifests(manifests, options) {
                     return resolve(stdout);
                 }
             });
-        })
+
+            apiCall.stdin.end(JSON.stringify(manifests) + "\n");
+        });
     } else if (options.apiType === 'http') {
         return new Promise(function(resolve, reject){
             request({

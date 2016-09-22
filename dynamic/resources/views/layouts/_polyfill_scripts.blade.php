@@ -1,5 +1,9 @@
 <?php
 
+$ENV = array_merge([
+    'DEBUG' => env('APP_DEBUG'),
+], isset($ENV) ? $ENV : []);
+
 $staticsManager = app()->statics;
 $shimsForIe8ScriptUrl = $staticsManager->urlOfFile('lib/shims-for-ie8-debug.js');
 $promisePolyfillScriptUrl = $staticsManager->urlOfFile('lib/promise-polyfill.js');
@@ -20,5 +24,5 @@ $localJQueryScriptUrl = $staticsManager->urlOfFile('lib/jquery.min.js');
 <script>if(!window.Promise){document.write('<script src="{{$promisePolyfillScriptUrl}}" ' + '><' + '/script>');}</script>
 
 
-{{-- 定义域名，方便通过JS操作一些东东 --}}
-<script>window.STATIC_SERVER = <?php echo json_encode(env('STATICS_SERVER')) ?>;</script>
+{{-- 定义环境变量，方便通过JS操作一些东东 --}}
+<script>window.ENV = <?php echo json_encode(!empty($ENV) ? $ENV: null) ?>;</script>

@@ -1,0 +1,32 @@
+branches:
+  only:
+  - master
+
+language: php, node_js
+
+sudo: false
+
+php:
+  - "5.5"
+
+node_js:
+  - "5.9"
+
+
+install:
+  - PROJECT_BASE="`pwd`"
+  - cd "$PROJECT_BASE/dynamic"
+  - cp .env.example .env
+  - composer install
+  - cd "$PROJECT_BASE/static"
+  - cp .env.example .env
+  - npm install -g gulp gulp-cli typescript less
+  - npm install
+  - npm install
+  - npm link typescript
+
+script:
+  - cd "$PROJECT_BASE/static"
+  - npm run build
+  - npm run test
+
