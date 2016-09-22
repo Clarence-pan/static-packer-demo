@@ -1,0 +1,12 @@
+.git/
+.idea/
+storage/
+tests/
+*.log
+
+lib/
+node_nodules/
+plugins/
+src/
+typings/
+
