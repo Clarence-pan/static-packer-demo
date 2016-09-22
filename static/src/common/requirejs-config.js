@@ -69,6 +69,21 @@ function loadRequireJsConfig() {
                     }
                 }
 
+                // 如果非调试环境，则取压缩后的~
+                if (!(window.Common && window.Common.env && window.Common.env.DEBUG)){
+                    for (file in config.paths){
+                        if (!config.paths.hasOwnProperty(file)){
+                            continue;
+                        }
+
+                        if (miniFileSuffix.test(file)){
+                            var originalFile = file.replace(miniFileSuffix, '');
+                            config.paths[originalFile] = config.paths[file];
+                            config.paths[originalFile.replace(libPrefixRegex, '')] = config.paths[file];
+                        }
+                    }
+                }
+
                 console.log('Final requirejs config: %o ', config);
 
                 resolve(config);
