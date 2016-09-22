@@ -14,9 +14,17 @@ node_js:
 
 
 before_script:
+  - phpenv global 5.5
+  - php --version
+  - composer --version
+  - nvm install 5.9
+  - node --version
+  - npm --version
+  - nvm --version
   - PROJECT_BASE="`pwd`"
   - cd "$PROJECT_BASE/dynamic"
   - cp .env.example .env
+  - composer self-update
   - composer install
   - cd "$PROJECT_BASE/static"
   - cp .env.example .env
