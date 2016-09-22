@@ -39,6 +39,7 @@ script:
 
 after_script:
   - cd "$PROJECT_BASE"
+  - tree static/typings
   - cat dynamic/bootstrap/cache/*.php
   - cat static/public/*.json
   - cat static/public/*.js
