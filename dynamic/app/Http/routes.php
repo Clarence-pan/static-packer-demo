@@ -13,6 +13,9 @@
 
 $app->get('/', 'HomeController@index');
 
+$app->get('/clear-cache', 'CacheController@clear');
+
+
 $app->get('/test', 'TestController@index');
 $app->get('/test/{action}', 'TestController@runAction');
 

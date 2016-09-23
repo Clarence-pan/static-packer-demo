@@ -59,6 +59,9 @@ $app->singleton(
 |
 */
 
+// 文件缓存控制器
+$app->middleware(App\Http\Middleware\FileCacheMiddleware::class);
+
 // $app->middleware([
 //    App\Http\Middleware\ExampleMiddleware::class
 // ]);
