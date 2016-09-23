@@ -26,9 +26,7 @@ before_script:
   - cd "$PROJECT_BASE/static"
   - cp .env.example .env
   - npm install
-  - npm link typescript
   - ln -s `pwd`/src node_modules/app
-  - sh -c "$PROJECT_BASE/start-dev-servers &"
 
 script:
   - cd "$PROJECT_BASE/static"
