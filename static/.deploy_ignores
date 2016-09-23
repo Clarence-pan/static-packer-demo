@@ -4,9 +4,9 @@ storage/
 tests/
 *.log
 
-lib/
-node_nodules/
-plugins/
-src/
-typings/
+/.env
+/lib/
+/plugins/
+/src/
+/typings/
 

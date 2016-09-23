@@ -1,44 +1,44 @@
 branches:
   only:
   - master
-
 language: php
-
 sudo: false
-
 php:
-  - "5.5"
-
+- '5.5'
 node_js:
-  - "5.9"
-
-
+- '5.9'
+before_install:
+- openssl aes-256-cbc -K $encrypted_be8f10526c9f_key -iv $encrypted_be8f10526c9f_iv
+  -in ssh_key_travis_spd.enc -out ssh_key_travis_spd -d
+- cp ./ssh_key_travis_spd ~/.ssh/id_rsa
+- chmod -R 600 ~/.ssh/id_rsa
+- eval $(ssh-agent)
+- ssh-add ~/.ssh/id_rsa
+- cp .ssh_config ~/.ssh/config
 before_script:
-  - nvm install 5.9
-  - node --version
-  - npm --version
-  - nvm --version
-  - PROJECT_BASE="`pwd`"
-  - cd "$PROJECT_BASE/dynamic"
-  - cp .env.example .env
-  - composer self-update
-  - composer install
-  - cd "$PROJECT_BASE/static"
-  - cp .env.example .env
-  - npm install
-  - ln -s `pwd`/src node_modules/app
-
+- nvm install 5.9
+- node --version
+- npm --version
+- nvm --version
+- PROJECT_BASE="`pwd`"
+- cd "$PROJECT_BASE/dynamic"
+- cp .env.example .env
+- composer self-update
+- composer install
+- cd "$PROJECT_BASE/static"
+- cp .env.example .env
+- npm install
+- ln -s `pwd`/src node_modules/app
 script:
-  - cd "$PROJECT_BASE/static"
-  - npm run build
-  - npm run test
-
+- cd "$PROJECT_BASE/static"
+- npm run build
+- npm run test
+- cd "$PROJECT_BASE"
+- ./deploy.sh spd-deployer@static-packer-demo.clarencep.com:/var/www/static-packer-demo
 after_script:
-  - cd "$PROJECT_BASE"
-  - tree static/typings
-  - cat dynamic/bootstrap/cache/*.php
-  - cat static/public/*.json
-  - cat static/public/*.js
-  - cat static/*.log
-
-
+- cd "$PROJECT_BASE"
+- tree static/typings
+- cat dynamic/bootstrap/cache/*.php
+- cat static/public/*.json
+- cat static/public/*.js
+- cat static/*.log

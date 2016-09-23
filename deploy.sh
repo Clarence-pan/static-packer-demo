@@ -11,6 +11,6 @@ fi;
 
 cd "`dirname $0`"
 
-dynamic/deploy.sh "$DEPLOY_TARGET/dynamic/"
 static/deploy.sh "$DEPLOY_TARGET/static/"
+dynamic/deploy.sh "$DEPLOY_TARGET/dynamic/"
 

@@ -1,0 +1,6 @@
+Host static-packer-demo.clarencep.com
+	User spd-deployer
+	StrictHostKeyChecking no
+	IdentityFile ~/.ssh/id_rsa
+	IdentitiesOnly yes
+
