@@ -1,3 +1,7 @@
+关于此项目 ![](https://travis-ci.org/Clarence-pan/static-packer-demo.svg)
+==========
+此项目是为了演示/测试/探索 PHP + NodeJs 的协作之道。
+
 目标：
 ======
 
@@ -37,11 +41,13 @@
 安装与初始化:
 =======
 
-1. 初始化动态内容： `cd dynamic && composer init`
-2. 配置动态内容的环境变量 -- 将`dynamic/.env.example`拷贝到`dynamic/.env`并修改其中的配置
-3. 初始化静态内容： `cd static && npm install -g gulp gulp-cli typescript && npm install && npm link typescript`
-4. 构建应用程序的静态内容： `cd static && gulp `
-5. 构建lib的静态内容：`cd static && gulp build-lib`
+在linux系统下可以直接执行`./install.sh`即可。也可以手工执行，其中主要工作如下：
+
+1. 初始化动态工程, 安装composer包： `cd dynamic && composer install`
+2. 配置动态工程的环境变量 -- 将`dynamic/.env.example`拷贝到`dynamic/.env`并根据需要修改其中的配置
+3. 初始化静态工程： `cd static && npm install -g gulp gulp-cli typescript && npm install && npm link typescript`
+4. 构建应用程序的静态工程： `cd static && gulp `
+5. 构建lib的静态工程：`cd static && gulp build-lib`
 
 
 

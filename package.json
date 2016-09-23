@@ -1,0 +1,13 @@
+{
+  "name": "static-packer-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd static && npm run build",
+    "test": "node tests/main.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}

@@ -205,7 +205,7 @@ function notifyDynamicAboutManifests(manifests, options) {
         apiShellCmd: process.env.UPDATE_STATICS_MAP_SHELL_CMD,
         apiShellCwd: process.env.UPDATE_STATICS_MAP_SHELL_CWD,
         timeout: 30 * 1000, // ms
-        oldManifests: null
+        oldManifests: null,
     }, options || {});
 
     if (Object.keys(manifests).length <= 0){
@@ -217,26 +217,31 @@ function notifyDynamicAboutManifests(manifests, options) {
 
     if (options.apiType === 'shell') {
         return new Promise(function(resolve, reject){
+            var manifestJsonFile = path.resolve(options.destDir, 'manifest.json');
             var cmd = options.apiShellCmd;
 
             gutil.log('> ' + cmd);
 
-            var apiCall = child_process.spawn(cmd, [], {
+            var apiCall = child_process.exec(cmd, {
                 cwd: options.apiShellCwd,
                 timeout: options.timeout,
                 shell: true,
-                stdio: ['pipe', 'pipe', 'pipe'],
             }, function(error, stdout, stderr){
                 if (error !== null){
-                    gutil.log("Finished update mainifest with error: ", error, " StdOut: ", stdout, " StdErr: ", stderr);
+                    gutil.log("Finished update manifest with error: ", error, " StdOut: ", stdout, " StdErr: ", stderr);
                     return reject(error);
                 } else {
-                    gutil.log("Finished update mainifest successfully. StdOut: ", stdout, " StdErr: ", stderr);
+                    gutil.log("Finished update manifest successfully. StdOut: ", stdout, " StdErr: ", stderr);
                     return resolve(stdout);
                 }
             });
 
-            apiCall.stdin.end(JSON.stringify(manifests) + "\n");
+            gutil.log('--> pid: ' + apiCall.pid);
+
+            // 如果有stdin, 一定要关闭stdin, 否则会卡住
+            if (apiCall.stdin){
+                apiCall.stdin.end(JSON.stringify(manifests));
+            }
         });
     } else if (options.apiType === 'http') {
         return new Promise(function(resolve, reject){
@@ -297,11 +302,10 @@ function saveStaticsManifests(options, done) {
         throw new Error("You must specify a destDir in options.");
     }
 
-    return Promise
-        .all([
-            saveStaticsManifestsToThisProject(options.data, options.destDir),
-            notifyDynamicAboutManifests(options.data, options),
-        ])
+    return saveStaticsManifestsToThisProject(options.data, options.destDir)
+        .then(function(){
+            return notifyDynamicAboutManifests(options.data, options);
+        })
         .then(done.bind(null, null), done);
 }
 
