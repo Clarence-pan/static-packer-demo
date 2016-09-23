@@ -1,5 +1,8 @@
 .git/
 .idea/
-storage/
-tests/
+/storage/
+/tests/
 *.log
+
+/.env
+
