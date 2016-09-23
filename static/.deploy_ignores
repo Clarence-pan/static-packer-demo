@@ -9,4 +9,5 @@ tests/
 /plugins/
 /src/
 /typings/
+/node_modules/
 
